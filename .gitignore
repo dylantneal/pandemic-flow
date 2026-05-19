@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Vercel
+.vercel/
+
+# Supabase
+packages/database/supabase/.branches/
+packages/database/supabase/.temp/
+
+# Testing
+coverage/
+
+# OS / IDE
+.DS_Store
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Raw data (do not commit large CDC extracts)
+*.csv
+data/raw/
+raw-snapshots/
+
+# Python (future pipeline)
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# Misc
+*.tsbuildinfo
+next-env.d.ts

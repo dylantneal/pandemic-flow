@@ -1,0 +1,24 @@
+{
+  "name": "pandemic-flow",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Pandemic Flow — COVID wastewater dynamics platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @pandemic-flow/web",
+    "build": "npm run build -w @pandemic-flow/web",
+    "lint": "npm run lint -w @pandemic-flow/web",
+    "typecheck": "npm run typecheck -w @pandemic-flow/web",
+    "test": "npm run test -w @pandemic-flow/web",
+    "db:start": "supabase start --workdir packages/database",
+    "db:stop": "supabase stop --workdir packages/database",
+    "db:reset": "supabase db reset --workdir packages/database",
+    "db:migration:list": "supabase migration list --workdir packages/database"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
