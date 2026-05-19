@@ -16,7 +16,13 @@
     "db:start": "supabase start --workdir packages/database",
     "db:stop": "supabase stop --workdir packages/database",
     "db:reset": "supabase db reset --workdir packages/database",
-    "db:migration:list": "supabase migration list --workdir packages/database"
+    "db:migration:list": "supabase migration list --workdir packages/database",
+    "ingest:cdc": "python scripts/ingest_cdc.py",
+    "refresh:sites": "python scripts/refresh_sites.py",
+    "transform:clean": "python scripts/transform_clean_observations.py",
+    "clean:cdc": "python scripts/run_cleaning.py",
+    "build:weekly": "python scripts/build_weekly_metrics.py",
+    "pipeline:weekly": "python scripts/run_weekly_pipeline.py"
   },
   "engines": {
     "node": ">=20"

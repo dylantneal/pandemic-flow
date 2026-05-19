@@ -21,6 +21,7 @@ dist/
 
 # Supabase
 packages/database/supabase/.branches/
+packages/database/.temp/
 packages/database/supabase/.temp/
 
 # Testing
