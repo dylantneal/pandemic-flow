@@ -10,11 +10,16 @@ packages/database/        Supabase config and migrations
 docs/                     Research and architecture notes
 ```
 
+## Links
+
+- **Live app:** https://web-five-sandy-7ewgvhnvpx.vercel.app
+- **GitHub:** https://github.com/dylantneal/pandemic-flow
+
 ## Prerequisites
 
 - Node.js 20+
 - [Supabase CLI](https://supabase.com/docs/guides/cli)
-- Docker (for local Supabase)
+- Docker with sufficient disk space (for local Supabase)
 
 ## Quick start
 
@@ -34,6 +39,10 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+If `npm run db:start` fails with **no space left on device**, free Docker disk space (`docker system prune`) and retry.
+
+For production, create a [Supabase cloud](https://supabase.com) project, run `supabase db push --workdir packages/database`, and set env vars in Vercel (see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)).
 
 ## Scripts
 
