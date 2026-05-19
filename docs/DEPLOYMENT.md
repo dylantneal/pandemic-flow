@@ -2,8 +2,13 @@
 
 ## Vercel
 
-1. Import the GitHub repository in [Vercel](https://vercel.com/new).
-2. Set **Root Directory** to `apps/web`.
+**Production:** https://web-five-sandy-7ewgvhnvpx.vercel.app  
+**GitHub:** https://github.com/dylantneal/pandemic-flow
+
+The project is linked to Vercel with Git push deploys. Root deployment uses the repository root with [`vercel.json`](../vercel.json) (builds `apps/web` via npm workspaces).
+
+1. Import or use the existing Vercel project `web` (or rename to `pandemic-flow`).
+2. Ensure **Root Directory** is the repository root (`.`). Do not set `apps/web` unless you adjust install/build commands.
 3. Framework preset: **Next.js** (auto-detected).
 4. Add environment variables for **Production** and **Preview**:
 
