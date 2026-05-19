@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/app-shell";
+import { BottomLine } from "@/components/dashboard/bottom-line";
 import {
   Card,
   CardDescription,
@@ -7,7 +8,7 @@ import {
 } from "@/components/ui/card";
 
 export const metadata = {
-  title: "About | Pandemic Flow",
+  title: "About",
   description: "About the Pandemic Flow COVID wastewater dynamics project.",
 };
 
@@ -15,35 +16,44 @@ export default function AboutPage() {
   return (
     <AppShell>
       <div className="mx-auto max-w-2xl space-y-8">
-        <div className="space-y-3">
-          <h1 className="text-3xl font-semibold tracking-tight">About</h1>
-          <p className="text-muted-foreground leading-relaxed">
-            Pandemic Flow is an educational and research-oriented platform that
-            visualizes community-level COVID activity from public wastewater
-            surveillance data, with a Neural ODE layer to explore hidden continuous
-            dynamics.
+        <header className="space-y-3">
+          <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">
+            About
           </p>
-        </div>
+          <h1 className="text-3xl font-semibold tracking-tight">Pandemic Flow</h1>
+          <p className="text-muted-foreground leading-relaxed">
+            An educational and research-oriented platform that visualizes
+            community-level COVID activity from public wastewater surveillance
+            data, with a Neural ODE layer planned to explore continuous dynamics
+            and short-horizon forecasts.
+          </p>
+        </header>
 
-        <Card className="border-border/60 bg-card/60">
+        <BottomLine>
+          <p>
+            This tool is <strong>not a medical diagnostic</strong> and does not
+            estimate individual risk. Wastewater trends indicate community viral
+            activity and should be read with appropriate caution.
+          </p>
+        </BottomLine>
+
+        <Card className="border-border/80 bg-card shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">Current phase</CardTitle>
+            <CardTitle className="text-base">Current status</CardTitle>
             <CardDescription className="leading-relaxed">
-              Phase 1 establishes the monorepo, Next.js shell, Supabase foundation,
-              CI, and Vercel deployment. Data ingestion and Illinois/Cook County
-              dashboards arrive in Phase 2.
+              Phase 5 delivers Illinois and Cook County dashboards with weekly
+              activity indices, historical charts, site lists, and data quality
+              panels. Automated weekly data refresh runs via GitHub Actions.
             </CardDescription>
           </CardHeader>
         </Card>
 
-        <Card className="border-border/60 bg-card/60">
+        <Card className="border-border/80 bg-card shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">Disclaimer</CardTitle>
+            <CardTitle className="text-base">What&apos;s next</CardTitle>
             <CardDescription className="leading-relaxed">
-              This is not a medical diagnostic tool and does not estimate individual
-              risk. Wastewater trends indicate community-level viral activity and
-              should be interpreted with appropriate caution and alongside other
-              public health data.
+              Neural ODE forecasting, national overview, and richer model
+              explainability are planned for future phases.
             </CardDescription>
           </CardHeader>
         </Card>

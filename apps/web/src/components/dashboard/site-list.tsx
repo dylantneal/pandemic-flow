@@ -1,0 +1,84 @@
+import { TrendChip } from "@/components/dashboard/trend-chip";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  formatActivityIndex,
+  formatPercentChange,
+  formatQualityScore,
+  formatShortDate,
+} from "@/lib/dashboard/format";
+import type { SiteMetricRow } from "@/lib/dashboard/types";
+
+export function SiteList({
+  sites,
+  weekStart,
+}: {
+  sites: SiteMetricRow[];
+  weekStart: string | null;
+}) {
+  return (
+    <Card className="border-border/80 bg-card shadow-sm">
+      <CardHeader>
+        <CardTitle className="text-lg">Sewershed sites</CardTitle>
+        <CardDescription>
+          {sites.length} sites with data for the week of{" "}
+          {weekStart ? formatShortDate(weekStart) : "—"}. Sorted by activity index.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        {sites.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No site-level metrics for this region yet.
+          </p>
+        ) : (
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-border text-xs text-muted-foreground">
+                <th className="pb-3 pr-4 font-medium">Site</th>
+                <th className="pb-3 pr-4 font-medium">Counties served</th>
+                <th className="pb-3 pr-4 font-medium text-right">Activity</th>
+                <th className="pb-3 pr-4 font-medium text-right">WoW</th>
+                <th className="pb-3 pr-4 font-medium">Trend</th>
+                <th className="pb-3 pr-4 font-medium text-right">Quality</th>
+                <th className="pb-3 font-medium text-right">Last sample</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sites.map((site) => (
+                <tr
+                  key={site.site_id}
+                  className="border-b border-border/60 last:border-0"
+                >
+                  <td className="py-3 pr-4 font-mono text-xs">{site.site_id}</td>
+                  <td className="max-w-[200px] truncate py-3 pr-4 text-muted-foreground">
+                    {site.counties_served ?? "—"}
+                  </td>
+                  <td className="py-3 pr-4 text-right font-medium text-primary tabular-nums">
+                    {formatActivityIndex(site.activity_index)}
+                  </td>
+                  <td className="py-3 pr-4 text-right tabular-nums text-muted-foreground">
+                    {formatPercentChange(site.week_over_week_change)}
+                  </td>
+                  <td className="py-3 pr-4">
+                    <TrendChip label={site.trend_label} className="text-xs" />
+                  </td>
+                  <td className="py-3 pr-4 text-right tabular-nums">
+                    {formatQualityScore(site.quality_score)}
+                  </td>
+                  <td className="py-3 text-right text-muted-foreground">
+                    {formatShortDate(site.latest_sample_date)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

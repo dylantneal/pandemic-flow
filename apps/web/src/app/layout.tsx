@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     template: "%s | Pandemic Flow",
   },
   description:
-    "Visualize community COVID wastewater dynamics with interpretable trends and continuous-time models.",
+    "Community COVID wastewater surveillance for Illinois and Cook County — trends, data quality, and interpretable activity indices.",
 };
 
 export default function RootLayout({
@@ -30,7 +30,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}

@@ -1,0 +1,78 @@
+export type TrendLabel = "rising" | "falling" | "stable" | "insufficient_data";
+
+export type RegionMetricRow = {
+  id: string;
+  region_type: string;
+  region_id: string;
+  region_name: string;
+  week_start: string;
+  site_count: number | null;
+  active_site_count: number | null;
+  population_represented: number | null;
+  median_activity_index: number | null;
+  weighted_activity_index: number | null;
+  week_over_week_change: number | null;
+  estimated_growth_rate: number | null;
+  trend_label: TrendLabel;
+  quality_score: number | null;
+  quality_flags: unknown;
+  created_at: string;
+};
+
+export type TimeseriesPoint = {
+  week_start: string;
+  weighted_activity_index: number | null;
+  median_activity_index: number | null;
+  trend_label: TrendLabel;
+  active_site_count: number | null;
+  quality_score: number | null;
+};
+
+export type SiteMetricRow = {
+  site_id: string;
+  week_start: string;
+  sample_count: number;
+  activity_index: number | null;
+  week_over_week_change: number | null;
+  trend_label: TrendLabel;
+  quality_score: number | null;
+  quality_flags: unknown;
+  latest_sample_date: string | null;
+  counties_served: string | null;
+  population_served: number | null;
+  active_status: string | null;
+};
+
+export type RegionConfig = {
+  slug: string;
+  name: string;
+  eyebrow: string;
+  regionType: "state" | "county";
+  regionId: string;
+  stateTerritory: string;
+  countyFips?: string;
+  description: string;
+};
+
+export const ILLINOIS_CONFIG: RegionConfig = {
+  slug: "illinois",
+  name: "Illinois",
+  eyebrow: "STATE SURVEILLANCE",
+  regionType: "state",
+  regionId: "IL",
+  stateTerritory: "IL",
+  description:
+    "Statewide wastewater activity aggregated from NWSS sewersheds reporting in Illinois.",
+};
+
+export const COOK_CONFIG: RegionConfig = {
+  slug: "cook-county",
+  name: "Cook County",
+  eyebrow: "COUNTY SURVEILLANCE",
+  regionType: "county",
+  regionId: "17031",
+  stateTerritory: "IL",
+  countyFips: "17031",
+  description:
+    "Cook County sewershed activity — a focused view of the Chicago metro wastewater signal.",
+};
