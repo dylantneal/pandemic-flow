@@ -1,0 +1,10 @@
+# Large local data — never deploy
+*.csv
+CDC_Wastewater_Data_for_SARS-CoV-2.csv
+data/
+raw-snapshots/
+
+# Dependencies and build artifacts
+node_modules/
+.next/
+.git/
