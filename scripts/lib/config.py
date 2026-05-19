@@ -43,7 +43,7 @@ def load_config() -> IngestionConfig:
         "SUPABASE_URL"
     )
     service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
-    cdc_csv_url = os.environ.get("CDC_WASTEWATER_CSV_URL", DEFAULT_CDC_URL)
+    cdc_csv_url = (os.environ.get("CDC_WASTEWATER_CSV_URL") or "").strip() or DEFAULT_CDC_URL
 
     missing: list[str] = []
     if not supabase_url:
