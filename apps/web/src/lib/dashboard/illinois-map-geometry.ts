@@ -1,6 +1,3 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-
 import { geoAlbers, geoPath } from "d3-geo";
 import { feature } from "topojson-client";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
@@ -12,6 +9,9 @@ import {
   type CountyMapAggregate,
 } from "@/lib/dashboard/county-aggregate";
 import { COUNTY_BY_FIPS } from "@/lib/dashboard/county-lookup";
+// Imported as a module asset so Next.js bundles it into the serverless function
+// payload — `public/` files are not available to runtime fs reads on Vercel.
+import topoData from "@/lib/dashboard/data/illinois-counties.topo.json";
 import type { SiteMetricRow } from "@/lib/dashboard/types";
 
 export type CountyMapFeature = {
@@ -32,13 +32,8 @@ export type WeeklyCountySnapshot = {
 const WIDTH = 520;
 const HEIGHT = 620;
 
-async function loadTopology(): Promise<Topology> {
-  const filePath = join(
-    process.cwd(),
-    "public/data/illinois-counties.topo.json",
-  );
-  const raw = await readFile(filePath, "utf-8");
-  return JSON.parse(raw) as Topology;
+function loadTopology(): Topology {
+  return topoData as unknown as Topology;
 }
 
 /** Build projected path strings for every IL county — reused across all weeks. */
@@ -47,7 +42,7 @@ export async function buildIllinoisCountyPaths(): Promise<{
   width: number;
   height: number;
 }> {
-  const topo = await loadTopology();
+  const topo = loadTopology();
   const collection = feature(
     topo,
     topo.objects.counties as Parameters<typeof feature>[1],

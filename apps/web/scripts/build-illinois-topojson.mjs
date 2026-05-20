@@ -7,7 +7,10 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const OUT_PATH = join(__dirname, "../public/data/illinois-counties.topo.json");
+const OUT_PATH = join(
+  __dirname,
+  "../src/lib/dashboard/data/illinois-counties.topo.json",
+);
 const SOURCE_URL =
   "https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json";
 

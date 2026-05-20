@@ -169,75 +169,109 @@ const SPIKE_ANGLES = [0, 26, 52, 78, 104, 130, 156, 182, 208, 234, 260, 286, 312
 function CoronavirusIcon({ id, size }: { id: number; size: number }) {
   const uid = `v${id}`;
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 100 100"
-      className="drop-shadow-[0_2px_12px_oklch(0.45_0.14_45/0.35)]"
-    >
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{ overflow: "visible" }}>
       <defs>
-        <radialGradient id={`${uid}-env`} cx="38%" cy="32%" r="65%">
-          <stop offset="0%" stopColor="oklch(0.72 0.1 55)" />
-          <stop offset="55%" stopColor="oklch(0.58 0.11 48)" />
-          <stop offset="100%" stopColor="oklch(0.42 0.08 42)" />
+        {/* Sphere main shading — light source upper-left */}
+        <radialGradient id={`${uid}-env`} cx="32%" cy="26%" r="56%">
+          <stop offset="0%"   stopColor="oklch(0.86 0.09 54)" />
+          <stop offset="22%"  stopColor="oklch(0.70 0.12 50)" />
+          <stop offset="55%"  stopColor="oklch(0.50 0.11 46)" />
+          <stop offset="85%"  stopColor="oklch(0.33 0.08 40)" />
+          <stop offset="100%" stopColor="oklch(0.22 0.05 36)" />
         </radialGradient>
-        <radialGradient id={`${uid}-spike`} cx="50%" cy="30%" r="70%">
-          <stop offset="0%" stopColor="oklch(0.78 0.2 42)" />
-          <stop offset="100%" stopColor="oklch(0.55 0.16 38)" />
+
+        {/* Shadow overlay — darkens the lower-right half */}
+        <radialGradient id={`${uid}-shade`} cx="74%" cy="73%" r="50%">
+          <stop offset="0%"   stopColor="rgba(0,0,0,0.55)" />
+          <stop offset="65%"  stopColor="rgba(0,0,0,0.15)" />
+          <stop offset="100%" stopColor="rgba(0,0,0,0)" />
+        </radialGradient>
+
+        {/* Specular highlight — primary 3-D cue */}
+        <radialGradient id={`${uid}-spec`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stopColor="rgba(255,232,200,0.85)" />
+          <stop offset="45%"  stopColor="rgba(255,215,168,0.28)" />
+          <stop offset="100%" stopColor="rgba(255,200,140,0)" />
+        </radialGradient>
+
+        {/* Rim light — orange bounce from below */}
+        <radialGradient id={`${uid}-rim`} cx="50%" cy="94%" r="42%">
+          <stop offset="0%"   stopColor="rgba(240,105,20,0.34)" />
+          <stop offset="100%" stopColor="rgba(210,65,0,0)" />
+        </radialGradient>
+
+        {/* Spike gradient */}
+        <radialGradient id={`${uid}-spike`} cx="40%" cy="22%" r="72%">
+          <stop offset="0%"   stopColor="oklch(0.86 0.20 47)" />
+          <stop offset="50%"  stopColor="oklch(0.65 0.17 43)" />
+          <stop offset="100%" stopColor="oklch(0.43 0.11 37)" />
+        </radialGradient>
+
+        {/* Glow halo */}
+        <radialGradient id={`${uid}-glow`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stopColor="#ff6a1a" stopOpacity="0.55" />
+          <stop offset="60%"  stopColor="#e84d00" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#c43a00" stopOpacity="0" />
         </radialGradient>
       </defs>
 
-      <circle cx="50" cy="50" r="30" fill={`url(#${uid}-env)`} opacity={0.92} />
-      {[
-        [42, 44],
-        [58, 46],
-        [48, 58],
-        [62, 56],
-        [38, 54],
-        [54, 38],
-        [46, 62],
-      ].map(([cx, cy], i) => (
-        <circle
-          key={i}
-          cx={cx}
-          cy={cy}
-          r={1.8}
-          fill="oklch(0.5 0.06 45)"
-          opacity={0.35}
-        />
-      ))}
+      {/* Ambient glow halo */}
+      <circle cx="50" cy="50" r="48" fill={`url(#${uid}-glow)`} />
 
+      {/* Spikes drawn first so body overlaps their bases */}
       {SPIKE_ANGLES.map((deg) => (
         <g key={deg} transform={`rotate(${deg} 50 50)`}>
           <path
             d="M50 14 C47 24, 47 30, 50 36 C53 30, 53 24, 50 14 Z"
             fill={`url(#${uid}-spike)`}
-            opacity={0.9}
+            opacity={0.92}
           />
-          <ellipse
-            cx="50"
-            cy="13"
-            rx="5.5"
-            ry="7"
-            fill={`url(#${uid}-spike)`}
-            opacity={0.95}
+          <ellipse cx="50" cy="13" rx="5.5" ry="7" fill={`url(#${uid}-spike)`} opacity={0.97} />
+          {/* Lit-edge highlight streak */}
+          <path
+            d="M48.5 17 C48 22, 48 27, 48.5 33"
+            stroke="rgba(255,215,155,0.40)"
+            strokeWidth="1.3"
+            strokeLinecap="round"
+            fill="none"
           />
           <line
-            x1="50"
-            y1="36"
-            x2="50"
-            y2="42"
-            stroke="oklch(0.62 0.14 40)"
+            x1="50" y1="36" x2="50" y2="42"
+            stroke="oklch(0.60 0.13 40)"
             strokeWidth="2.2"
             strokeLinecap="round"
-            opacity={0.7}
+            opacity={0.65}
           />
         </g>
       ))}
 
+      {/* Body: sphere base shading */}
+      <circle cx="50" cy="50" r="30" fill={`url(#${uid}-env)`} opacity={0.97} />
+
+      {/* Body: shadow-side overlay */}
+      <circle cx="50" cy="50" r="30" fill={`url(#${uid}-shade)`} />
+
+      {/* Body: rim-light bounce */}
+      <circle cx="50" cy="50" r="30" fill={`url(#${uid}-rim)`} />
+
+      {/* Surface micro-dots (dark craters, not bumps) */}
+      {([
+        [42, 44], [58, 46], [48, 58],
+        [62, 56], [38, 54], [54, 38], [46, 62],
+      ] as [number, number][]).map(([cx, cy], i) => (
+        <circle key={i} cx={cx} cy={cy} r={1.8} fill="rgba(0,0,0,0.38)" opacity={0.55} />
+      ))}
+
+      {/* Specular highlight — the key 3-D cue */}
+      <circle cx="41" cy="37" r="9.5" fill={`url(#${uid}-spec)`} />
+
+      {/* Secondary glint */}
+      <circle cx="57" cy="36" r="2.8" fill="rgba(255,245,220,0.42)" />
+
+      {/* Mid-protein dots on spikes */}
       {[15, 75, 135, 195, 255, 315].map((deg) => (
         <g key={`m${deg}`} transform={`rotate(${deg + 12} 50 50)`}>
-          <circle cx="50" cy="24" r="2.2" fill="oklch(0.7 0.14 50)" opacity={0.55} />
+          <circle cx="50" cy="24" r="2.2" fill="oklch(0.72 0.14 50)" opacity={0.50} />
         </g>
       ))}
     </svg>
@@ -344,6 +378,16 @@ export function HeroParticleField({
       aria-hidden
       className="pointer-events-none absolute inset-0 overflow-hidden"
     >
+      <style>{`
+        @keyframes covidGlow {
+          0%, 100% {
+            filter: drop-shadow(0 0 4px rgba(230, 90, 10, 0.25)) drop-shadow(0 0 10px rgba(200, 60, 0, 0.12));
+          }
+          50% {
+            filter: drop-shadow(0 0 10px rgba(255, 110, 20, 0.65)) drop-shadow(0 0 22px rgba(220, 80, 0, 0.35)) drop-shadow(0 0 36px rgba(180, 50, 0, 0.15));
+          }
+        }
+      `}</style>
       {displayMeta.map((p, index) => (
         <div
           key={p.id}
@@ -355,6 +399,8 @@ export function HeroParticleField({
             width: p.size,
             height: p.size,
             opacity: p.opacity,
+            animation: `covidGlow ${2.8 + (p.id % 7) * 0.35}s ease-in-out infinite`,
+            animationDelay: `${(p.id * 0.47) % 3}s`,
           }}
         >
           <CoronavirusIcon id={p.id} size={p.size} />

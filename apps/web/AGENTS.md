@@ -12,4 +12,4 @@ Regenerate Illinois county TopoJSON after updating `us-atlas`:
 node apps/web/scripts/build-illinois-topojson.mjs
 ```
 
-Output: `apps/web/public/data/illinois-counties.topo.json`
+Output: `apps/web/src/lib/dashboard/data/illinois-counties.topo.json` (bundled with the server function)
