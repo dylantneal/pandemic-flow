@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 export function BottomLine({
-  title = "The bottom line",
+  title = "In plain terms",
   children,
   className,
 }: {

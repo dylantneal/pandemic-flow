@@ -62,7 +62,7 @@ export const ILLINOIS_CONFIG: RegionConfig = {
   regionId: "IL",
   stateTerritory: "IL",
   description:
-    "Statewide wastewater activity aggregated from NWSS sewersheds reporting in Illinois.",
+    "Statewide community wastewater signal from CDC NWSS sewersheds across Illinois, aggregated weekly after cleaning and quality review.",
 };
 
 export const COOK_CONFIG: RegionConfig = {
@@ -74,5 +74,5 @@ export const COOK_CONFIG: RegionConfig = {
   stateTerritory: "IL",
   countyFips: "17031",
   description:
-    "Cook County sewershed activity — a focused view of the Chicago metro wastewater signal.",
+    "Cook County and Chicago-area sewersheds. A metro-focused view of community viral shedding in wastewater.",
 };

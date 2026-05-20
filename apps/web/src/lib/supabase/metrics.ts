@@ -5,11 +5,17 @@ import type {
   TimeseriesPoint,
 } from "@/lib/dashboard/types";
 
+/** NWSS stores Illinois as lowercase `il` in site-level tables. */
+const IL_STATE_DB = "il";
+
 const METRIC_COLUMNS =
   "id, region_type, region_id, region_name, week_start, site_count, active_site_count, population_represented, median_activity_index, weighted_activity_index, week_over_week_change, estimated_growth_rate, trend_label, quality_score, quality_flags, created_at";
 
 const TIMESERIES_COLUMNS =
   "week_start, weighted_activity_index, median_activity_index, trend_label, active_site_count, quality_score";
+
+const SITE_METRIC_COLUMNS =
+  "site_id, week_start, sample_count, activity_index, week_over_week_change, trend_label, quality_score, quality_flags, latest_sample_date";
 
 export async function getLatestRegionMetric(
   regionType: string,
@@ -62,24 +68,33 @@ export async function getRegionTimeseries(
   return (data ?? []) as TimeseriesPoint[];
 }
 
+async function getCookSiteIds(): Promise<string[]> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("sites")
+    .select("site_id")
+    .eq("is_cook_county_site", true);
+
+  if (error) {
+    console.error("getCookSiteIds:", error.message);
+    return [];
+  }
+  return (data ?? []).map((r) => r.site_id as string);
+}
+
 export async function getSiteLatestMetrics(options: {
-  stateTerritory: string;
-  countyFips?: string;
+  cookCountyOnly?: boolean;
 }): Promise<SiteMetricRow[]> {
   const supabase = createServerClient();
 
-  let weekQuery = supabase
+  const { data: weekRow, error: weekError } = await supabase
     .from("weekly_site_metrics")
     .select("week_start")
-    .eq("state_territory", options.stateTerritory)
+    .eq("state_territory", IL_STATE_DB)
     .order("week_start", { ascending: false })
-    .limit(1);
+    .limit(1)
+    .maybeSingle();
 
-  if (options.countyFips) {
-    weekQuery = weekQuery.eq("county_fips", options.countyFips);
-  }
-
-  const { data: weekRow, error: weekError } = await weekQuery.maybeSingle();
   if (weekError || !weekRow?.week_start) {
     if (weekError) console.error("getSiteLatestMetrics week:", weekError.message);
     return [];
@@ -89,15 +104,15 @@ export async function getSiteLatestMetrics(options: {
 
   let metricsQuery = supabase
     .from("weekly_site_metrics")
-    .select(
-      "site_id, week_start, sample_count, activity_index, week_over_week_change, trend_label, quality_score, quality_flags, latest_sample_date",
-    )
-    .eq("state_territory", options.stateTerritory)
+    .select(SITE_METRIC_COLUMNS)
+    .eq("state_territory", IL_STATE_DB)
     .eq("week_start", latestWeek)
     .order("activity_index", { ascending: false, nullsFirst: false });
 
-  if (options.countyFips) {
-    metricsQuery = metricsQuery.eq("county_fips", options.countyFips);
+  if (options.cookCountyOnly) {
+    const cookIds = await getCookSiteIds();
+    if (cookIds.length === 0) return [];
+    metricsQuery = metricsQuery.in("site_id", cookIds);
   }
 
   const { data: metrics, error: metricsError } = await metricsQuery;
@@ -138,20 +153,16 @@ export async function getSiteLatestMetrics(options: {
 }
 
 export async function getSitesForRegion(options: {
-  stateTerritory: string;
-  countyFips?: string;
-  cookOnly?: boolean;
+  cookCountyOnly?: boolean;
 }): Promise<number> {
   const supabase = createServerClient();
   let query = supabase
     .from("sites")
     .select("site_id", { count: "exact", head: true })
-    .eq("state_territory", options.stateTerritory);
+    .eq("state_territory", IL_STATE_DB);
 
-  if (options.cookOnly) {
+  if (options.cookCountyOnly) {
     query = query.eq("is_cook_county_site", true);
-  } else if (options.countyFips) {
-    query = query.eq("county_fips", options.countyFips);
   }
 
   const { count, error } = await query;

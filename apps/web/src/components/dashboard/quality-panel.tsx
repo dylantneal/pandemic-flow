@@ -42,7 +42,7 @@ export function QualityPanel({ latest }: { latest: RegionMetricRow | null }) {
 
         {flags.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No quality flags for the latest week — reporting looks routine.
+            No quality flags for the latest week. Reporting looks routine.
           </p>
         ) : (
           <ul className="space-y-2">
@@ -58,7 +58,7 @@ export function QualityPanel({ latest }: { latest: RegionMetricRow | null }) {
         )}
 
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Wastewater surveillance reflects community shedding, not individual
+          Wastewater monitoring reflects community shedding, not individual
           diagnoses. Gaps in sampling, lab methods, or sewershed coverage can shift
           the index without a true epidemic change.
         </p>

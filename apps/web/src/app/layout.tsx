@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import "./globals.css";
+import { siteDescription, siteName } from "@/lib/copy/site-copy";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,11 +16,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Pandemic Flow",
-    template: "%s | Pandemic Flow",
+    default: siteName,
+    template: `%s | ${siteName}`,
   },
-  description:
-    "Community COVID wastewater surveillance for Illinois and Cook County — trends, data quality, and interpretable activity indices.",
+  description: siteDescription,
 };
 
 export default function RootLayout({

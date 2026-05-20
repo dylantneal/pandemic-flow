@@ -1,4 +1,4 @@
-# Pandemic Flow
+# COVID Flow
 
 A web-based COVID wastewater dynamics platform. Phase 1 provides the application shell, Supabase foundation, CI, and deployment wiring.
 

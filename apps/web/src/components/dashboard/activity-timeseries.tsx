@@ -153,7 +153,7 @@ export function ActivityTimeseries({
           </div>
         )}
         <p className="mt-3 text-xs text-muted-foreground">
-          Source: CDC NWSS via Pandemic Flow weekly pipeline. Index is relative to
+          Source: CDC NWSS via COVID Flow weekly pipeline. Index is relative to
           historical sewershed baselines, not a case count.
         </p>
       </CardContent>

@@ -1,11 +1,5 @@
 import { TrendChip } from "@/components/dashboard/trend-chip";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   formatActivityIndex,
   formatPercentChange,
@@ -17,29 +11,32 @@ import type { SiteMetricRow } from "@/lib/dashboard/types";
 export function SiteList({
   sites,
   weekStart,
+  totalInRegistry,
 }: {
   sites: SiteMetricRow[];
   weekStart: string | null;
+  totalInRegistry?: number;
 }) {
+  const weekLabel = weekStart ? formatShortDate(weekStart) : "—";
+  const caption =
+    totalInRegistry != null && totalInRegistry > 0
+      ? `${sites.length} of ${totalInRegistry} sewersheds reported for the week of ${weekLabel}. Sorted by activity index (highest first).`
+      : `${sites.length} sewersheds with data for the week of ${weekLabel}. Sorted by activity index.`;
+
   return (
     <Card className="border-border/80 bg-card shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-lg">Sewershed sites</CardTitle>
-        <CardDescription>
-          {sites.length} sites with data for the week of{" "}
-          {weekStart ? formatShortDate(weekStart) : "—"}. Sorted by activity index.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="overflow-x-auto">
+      <CardContent className="overflow-x-auto pt-6">
+        <p className="mb-4 text-sm text-muted-foreground">{caption}</p>
         {sites.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            No site-level metrics for this region yet.
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            No site-level rows for this region in the latest pipeline run. Region
+            aggregates may still update when sewershed coverage is partial.
           </p>
         ) : (
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
               <tr className="border-b border-border text-xs text-muted-foreground">
-                <th className="pb-3 pr-4 font-medium">Site</th>
+                <th className="pb-3 pr-4 font-medium">Site ID</th>
                 <th className="pb-3 pr-4 font-medium">Counties served</th>
                 <th className="pb-3 pr-4 font-medium text-right">Activity</th>
                 <th className="pb-3 pr-4 font-medium text-right">WoW</th>
@@ -55,7 +52,7 @@ export function SiteList({
                   className="border-b border-border/60 last:border-0"
                 >
                   <td className="py-3 pr-4 font-mono text-xs">{site.site_id}</td>
-                  <td className="max-w-[200px] truncate py-3 pr-4 text-muted-foreground">
+                  <td className="max-w-[220px] truncate py-3 pr-4 text-muted-foreground">
                     {site.counties_served ?? "—"}
                   </td>
                   <td className="py-3 pr-4 text-right font-medium text-primary tabular-nums">

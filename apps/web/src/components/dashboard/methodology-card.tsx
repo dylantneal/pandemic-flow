@@ -1,10 +1,10 @@
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  AccentCard,
+  AccentCardContent,
+  AccentCardDescription,
+  AccentCardHeader,
+  AccentCardTitle,
+} from "@/components/dashboard/accent-card";
 
 export function MethodologyCard({
   title = "Data source",
@@ -18,12 +18,14 @@ export function MethodologyCard({
   sourceUrl: string;
 }) {
   return (
-    <Card className="border-border/80 bg-muted/30">
-      <CardHeader className="border-l-4 border-l-primary pl-4">
-        <CardTitle className="text-base">{title}</CardTitle>
-        <CardDescription className="leading-relaxed">{description}</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <AccentCard className="bg-muted/30">
+      <AccentCardHeader>
+        <AccentCardTitle className="text-base">{title}</AccentCardTitle>
+        <AccentCardDescription className="leading-relaxed">
+          {description}
+        </AccentCardDescription>
+      </AccentCardHeader>
+      <AccentCardContent>
         <p className="text-sm text-muted-foreground">
           Source:{" "}
           <a
@@ -35,7 +37,7 @@ export function MethodologyCard({
             {sourceLabel}
           </a>
         </p>
-      </CardContent>
-    </Card>
+      </AccentCardContent>
+    </AccentCard>
   );
 }
