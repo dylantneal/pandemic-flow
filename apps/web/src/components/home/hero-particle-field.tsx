@@ -1,22 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-type Particle = {
+type SimParticle = {
   id: number;
   x: number;
   y: number;
+  vx: number;
+  vy: number;
+  radius: number;
   size: number;
   opacity: number;
-  driftX: number;
-  driftY: number;
-  durX: number;
-  durY: number;
-  rotDur: number;
-  /** Negative offset so animation is already in progress on first paint */
-  phaseX: number;
-  phaseY: number;
-  phaseRot: number;
+  rot: number;
+  rotSpeed: number;
 };
 
 type ParticlePreset = {
@@ -36,30 +32,36 @@ function seededRandom(seed: number) {
   };
 }
 
-function buildParticles(preset: ParticlePreset): Particle[] {
+function buildSimParticles(
+  preset: ParticlePreset,
+  width: number,
+  height: number,
+): SimParticle[] {
   const rand = seededRandom(preset.seed);
-  const items: Particle[] = [];
+  const items: SimParticle[] = [];
+
   for (let i = 0; i < preset.count; i++) {
     const t = rand();
-    const durX = 7 + rand() * 8;
-    const durY = 9 + rand() * 10;
-    const rotDur = 22 + rand() * 28;
+    const size = preset.sizeMin + t * (preset.sizeMax - preset.sizeMin);
+    const radius = size * COLLISION_RADIUS_SCALE;
+    const margin = radius + 4;
+    const speed = 28 + rand() * 38;
+    const angle = rand() * Math.PI * 2;
+
     items.push({
       id: i,
-      x: 2 + rand() * 96,
-      y: 2 + rand() * 96,
-      size: preset.sizeMin + t * (preset.sizeMax - preset.sizeMin),
+      x: margin + rand() * Math.max(width - margin * 2, 1),
+      y: margin + rand() * Math.max(height - margin * 2, 1),
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      radius,
+      size,
       opacity: preset.opacityMin + rand() * (preset.opacityMax - preset.opacityMin),
-      driftX: 14 + rand() * 32,
-      driftY: 12 + rand() * 28,
-      durX,
-      durY,
-      rotDur,
-      phaseX: -(rand() * durX),
-      phaseY: -(rand() * durY),
-      phaseRot: -(rand() * rotDur),
+      rot: rand() * 360,
+      rotSpeed: (rand() > 0.5 ? 1 : -1) * (12 + rand() * 28),
     });
   }
+
   return items;
 }
 
@@ -81,10 +83,86 @@ const ABOUT_PRESET: ParticlePreset = {
   opacityMax: 0.32,
 };
 
-const PRESET_PARTICLES = {
-  home: buildParticles(HOME_PRESET),
-  about: buildParticles(ABOUT_PRESET),
+const PRESETS = {
+  home: HOME_PRESET,
+  about: ABOUT_PRESET,
 } as const;
+
+const RESTITUTION = 0.92;
+const COLLISION_PASSES = 4;
+/** SVG body + spikes reach ~36% of icon size from center (viewBox 100, envelope r=30). */
+const COLLISION_RADIUS_SCALE = 0.36;
+
+function resolveWall(p: SimParticle, width: number, height: number) {
+  if (p.x - p.radius < 0) {
+    p.x = p.radius;
+    p.vx = Math.abs(p.vx) * RESTITUTION;
+  } else if (p.x + p.radius > width) {
+    p.x = width - p.radius;
+    p.vx = -Math.abs(p.vx) * RESTITUTION;
+  }
+
+  if (p.y - p.radius < 0) {
+    p.y = p.radius;
+    p.vy = Math.abs(p.vy) * RESTITUTION;
+  } else if (p.y + p.radius > height) {
+    p.y = height - p.radius;
+    p.vy = -Math.abs(p.vy) * RESTITUTION;
+  }
+}
+
+function resolvePair(a: SimParticle, b: SimParticle) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const distSq = dx * dx + dy * dy;
+  const minDist = a.radius + b.radius;
+
+  if (distSq >= minDist * minDist || distSq === 0) return;
+
+  const dist = Math.sqrt(distSq);
+  const nx = dx / dist;
+  const ny = dy / dist;
+  const overlap = minDist - dist;
+
+  a.x -= (nx * overlap) / 2;
+  a.y -= (ny * overlap) / 2;
+  b.x += (nx * overlap) / 2;
+  b.y += (ny * overlap) / 2;
+
+  const relVx = a.vx - b.vx;
+  const relVy = a.vy - b.vy;
+  const relDot = relVx * nx + relVy * ny;
+
+  if (relDot <= 0) return;
+
+  const impulse = relDot * RESTITUTION;
+  a.vx -= impulse * nx;
+  a.vy -= impulse * ny;
+  b.vx += impulse * nx;
+  b.vy += impulse * ny;
+}
+
+function stepSimulation(
+  particles: SimParticle[],
+  width: number,
+  height: number,
+  dt: number,
+) {
+  for (const p of particles) {
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.rot = (p.rot + p.rotSpeed * dt) % 360;
+    resolveWall(p, width, height);
+  }
+
+  for (let pass = 0; pass < COLLISION_PASSES; pass++) {
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        resolvePair(particles[i], particles[j]);
+      }
+    }
+  }
+}
 
 const SPIKE_ANGLES = [0, 26, 52, 78, 104, 130, 156, 182, 208, 234, 260, 286, 312, 338];
 
@@ -109,9 +187,7 @@ function CoronavirusIcon({ id, size }: { id: number; size: number }) {
         </radialGradient>
       </defs>
 
-      {/* envelope */}
       <circle cx="50" cy="50" r="30" fill={`url(#${uid}-env)`} opacity={0.92} />
-      {/* envelope texture */}
       {[
         [42, 44],
         [58, 46],
@@ -131,7 +207,6 @@ function CoronavirusIcon({ id, size }: { id: number; size: number }) {
         />
       ))}
 
-      {/* spike proteins */}
       {SPIKE_ANGLES.map((deg) => (
         <g key={deg} transform={`rotate(${deg} 50 50)`}>
           <path
@@ -160,7 +235,6 @@ function CoronavirusIcon({ id, size }: { id: number; size: number }) {
         </g>
       ))}
 
-      {/* small envelope proteins between spikes */}
       {[15, 75, 135, 195, 255, 315].map((deg) => (
         <g key={`m${deg}`} transform={`rotate(${deg + 12} 50 50)`}>
           <circle cx="50" cy="24" r="2.2" fill="oklch(0.7 0.14 50)" opacity={0.55} />
@@ -173,10 +247,19 @@ function CoronavirusIcon({ id, size }: { id: number; size: number }) {
 export function HeroParticleField({
   variant = "home",
 }: {
-  variant?: keyof typeof PRESET_PARTICLES;
+  variant?: keyof typeof PRESETS;
 }) {
   const [reduceMotion, setReduceMotion] = useState(false);
-  const particles = PRESET_PARTICLES[variant];
+  const containerRef = useRef<HTMLDivElement>(null);
+  const particleRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const simRef = useRef<SimParticle[]>([]);
+  const boundsRef = useRef({ width: 0, height: 0 });
+  const preset = PRESETS[variant];
+
+  const displayMeta = useMemo(
+    () => buildSimParticles(preset, 1000, 800),
+    [preset],
+  );
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -185,6 +268,66 @@ export function HeroParticleField({
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
   }, []);
+
+  useLayoutEffect(() => {
+    if (reduceMotion) return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const paint = () => {
+      const particles = simRef.current;
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        const el = particleRefs.current[i];
+        if (!el) continue;
+        el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0) translate(-50%, -50%) rotate(${p.rot}deg)`;
+        el.style.zIndex = String(Math.round(p.y));
+      }
+    };
+
+    const initSim = () => {
+      const rect = container.getBoundingClientRect();
+      if (rect.width < 10 || rect.height < 10) return false;
+      boundsRef.current = { width: rect.width, height: rect.height };
+      simRef.current = buildSimParticles(preset, rect.width, rect.height);
+      paint();
+      return true;
+    };
+
+    let raf = 0;
+    let last = performance.now();
+
+    const tick = (now: number) => {
+      if (simRef.current.length === 0) {
+        initSim();
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+
+      const dt = Math.min((now - last) / 1000, 0.033);
+      last = now;
+      const { width, height } = boundsRef.current;
+
+      stepSimulation(simRef.current, width, height, dt);
+      paint();
+
+      raf = requestAnimationFrame(tick);
+    };
+
+    raf = requestAnimationFrame(tick);
+
+    const observer = new ResizeObserver(() => {
+      initSim();
+    });
+    observer.observe(container);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+      simRef.current = [];
+    };
+  }, [preset, reduceMotion, displayMeta]);
 
   if (reduceMotion) {
     return (
@@ -196,46 +339,25 @@ export function HeroParticleField({
   }
 
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      {particles.map((p) => (
+    <div
+      ref={containerRef}
+      aria-hidden
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+    >
+      {displayMeta.map((p, index) => (
         <div
           key={p.id}
-          className="absolute hero-particle-drift-x"
-          style={
-            {
-              left: `${p.x}%`,
-              top: `${p.y}%`,
-              width: p.size,
-              height: p.size,
-              opacity: p.opacity,
-              "--drift-x": `${p.driftX}px`,
-              "--dur-x": `${p.durX}s`,
-              "--phase-x": `${p.phaseX}s`,
-            } as React.CSSProperties
-          }
+          ref={(el) => {
+            particleRefs.current[index] = el;
+          }}
+          className="absolute left-0 top-0 will-change-transform"
+          style={{
+            width: p.size,
+            height: p.size,
+            opacity: p.opacity,
+          }}
         >
-          <div
-            className="hero-particle-drift-y size-full"
-            style={
-              {
-                "--drift-y": `${p.driftY}px`,
-                "--dur-y": `${p.durY}s`,
-                "--phase-y": `${p.phaseY}s`,
-              } as React.CSSProperties
-            }
-          >
-            <div
-              className="hero-particle-tumble size-full"
-            style={
-              {
-                "--rot-dur": `${p.rotDur}s`,
-                "--phase-rot": `${p.phaseRot}s`,
-              } as React.CSSProperties
-            }
-          >
-              <CoronavirusIcon id={p.id} size={p.size} />
-            </div>
-          </div>
+          <CoronavirusIcon id={p.id} size={p.size} />
         </div>
       ))}
     </div>

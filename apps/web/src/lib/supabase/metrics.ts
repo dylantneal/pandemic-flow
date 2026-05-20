@@ -152,6 +152,96 @@ export async function getSiteLatestMetrics(options: {
   });
 }
 
+/**
+ * Returns site-level metrics for all available weeks for Illinois.
+ * Optionally limited to the most recent `weeks` periods.
+ * The result is a flat array keyed by `week_start`; callers should group by
+ * `week_start` to build per-week snapshots.
+ */
+export async function getSiteHistoricalMetrics(options?: {
+  weeks?: number;
+  fromDate?: string;
+}): Promise<SiteMetricRow[]> {
+  const supabase = createServerClient();
+
+  // PostgREST caps responses at 1000 rows; paginate to get all history.
+  const PAGE_SIZE = 1000;
+
+  let fromDate: string | undefined;
+  if (options?.fromDate) {
+    fromDate = options.fromDate;
+  } else if (options?.weeks != null && options.weeks > 0) {
+    const { data: weekRow } = await supabase
+      .from("weekly_site_metrics")
+      .select("week_start")
+      .eq("state_territory", IL_STATE_DB)
+      .order("week_start", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (weekRow?.week_start) {
+      const latest = new Date(`${weekRow.week_start as string}T12:00:00`);
+      latest.setDate(latest.getDate() - options.weeks * 7);
+      fromDate = latest.toISOString().slice(0, 10);
+    }
+  }
+
+  const allMetrics: Record<string, unknown>[] = [];
+  let offset = 0;
+
+  while (true) {
+    let q = supabase
+      .from("weekly_site_metrics")
+      .select(`${SITE_METRIC_COLUMNS}, week_start`)
+      .eq("state_territory", IL_STATE_DB)
+      .order("week_start", { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
+
+    if (fromDate) q = q.gte("week_start", fromDate);
+
+    const { data: page, error } = await q;
+    if (error) {
+      console.error("getSiteHistoricalMetrics:", error.message);
+      break;
+    }
+    if (!page || page.length === 0) break;
+    allMetrics.push(...(page as Record<string, unknown>[]));
+    if (page.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+
+  if (allMetrics.length === 0) return [];
+
+  const siteIds = [...new Set(allMetrics.map((m) => m.site_id as string))];
+
+  const { data: sites } = await supabase
+    .from("sites")
+    .select("site_id, counties_served, population_served, active_status")
+    .in("site_id", siteIds);
+
+  const siteMap = new Map(
+    (sites ?? []).map((s) => [s.site_id as string, s]),
+  );
+
+  return (allMetrics).map((m) => {
+    const site = siteMap.get(m.site_id as string);
+    return {
+      site_id: m.site_id as string,
+      week_start: m.week_start as string,
+      sample_count: m.sample_count as number,
+      activity_index: m.activity_index as number | null,
+      week_over_week_change: m.week_over_week_change as number | null,
+      trend_label: m.trend_label as SiteMetricRow["trend_label"],
+      quality_score: m.quality_score as number | null,
+      quality_flags: m.quality_flags,
+      latest_sample_date: m.latest_sample_date as string | null,
+      counties_served: (site?.counties_served as string | null) ?? null,
+      population_served: (site?.population_served as number | null) ?? null,
+      active_status: (site?.active_status as string | null) ?? null,
+    };
+  });
+}
+
 export async function getSitesForRegion(options: {
   cookCountyOnly?: boolean;
 }): Promise<number> {

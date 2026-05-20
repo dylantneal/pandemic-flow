@@ -101,61 +101,56 @@
   --hero-foreground: oklch(0.98 0.005 70);
 }
 
-/* Layered X/Y drift + slow tumble for organic hero particle motion */
-@keyframes hero-drift-x {
-  0%,
-  100% {
-    transform: translateX(calc(var(--drift-x, 20px) * -0.55));
-  }
-  35% {
-    transform: translateX(calc(var(--drift-x, 20px) * 0.15));
-  }
-  70% {
-    transform: translateX(var(--drift-x, 20px));
-  }
+/* ── Map time-slider ────────────────────────────────────────────────────── */
+.map-time-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--border);
+  outline: none;
+  cursor: pointer;
 }
 
-@keyframes hero-drift-y {
-  0%,
-  100% {
-    transform: translateY(calc(var(--drift-y, 16px) * -0.5));
-  }
-  40% {
-    transform: translateY(calc(var(--drift-y, 16px) * 0.25));
-  }
-  75% {
-    transform: translateY(var(--drift-y, 16px));
-  }
+.map-time-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
 }
 
-@keyframes hero-tumble {
-  from {
-    transform: rotate(0deg) scale(1);
-  }
-  50% {
-    transform: rotate(180deg) scale(1.04);
-  }
-  to {
-    transform: rotate(360deg) scale(1);
-  }
+.map-time-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.2);
+  margin-top: -6px;
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.15s;
 }
 
-.hero-particle-drift-x {
-  animation: hero-drift-x var(--dur-x, 10s) cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-  animation-delay: var(--phase-x, 0s);
-  will-change: transform;
+.map-time-slider::-webkit-slider-thumb:hover,
+.map-time-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary) 30%, transparent);
+  transform: scale(1.15);
 }
 
-.hero-particle-drift-y {
-  animation: hero-drift-y var(--dur-y, 12s) cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  animation-delay: var(--phase-y, 0s);
-  will-change: transform;
+.map-time-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--border);
 }
 
-.hero-particle-tumble {
-  animation: hero-tumble var(--rot-dur, 28s) linear infinite;
-  animation-delay: var(--phase-rot, 0s);
-  will-change: transform;
+.map-time-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.2);
+  cursor: pointer;
 }
 
 @layer base {

@@ -45,13 +45,35 @@ export function ActivityTimeseries({
       .map((d) => ({
         week: d.week_start,
         value: d.weighted_activity_index as number,
-        label: formatShortDate(d.week_start),
       }));
 
     if (range === "all") return points;
     const n = range === "12" ? 12 : 52;
     return points.slice(-n);
   }, [data, range]);
+
+  /**
+   * Pre-compute the set of week values where the year first appears so the
+   * tick formatter is a pure function (no mutation inside render).
+   */
+  const yearChangeWeeks = useMemo(() => {
+    const seen = new Set<number>();
+    const firsts = new Set<string>();
+    for (const { week } of chartData) {
+      const year = new Date(`${week}T12:00:00`).getFullYear();
+      if (!seen.has(year)) {
+        seen.add(year);
+        firsts.add(week);
+      }
+    }
+    return firsts;
+  }, [chartData]);
+
+  const xTickFormatter = (weekStart: string) => {
+    const d = new Date(`${weekStart}T12:00:00`);
+    const base = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return yearChangeWeeks.has(weekStart) ? `${base}, ${d.getFullYear()}` : base;
+  };
 
   return (
     <Card className={cn("border-border/80 bg-card shadow-sm", className)}>
@@ -104,12 +126,13 @@ export function ActivityTimeseries({
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" />
                 <XAxis
-                  dataKey="label"
+                  dataKey="week"
                   tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                   tickLine={false}
                   axisLine={false}
                   interval="preserveStartEnd"
                   minTickGap={40}
+                  tickFormatter={xTickFormatter}
                 />
                 <YAxis
                   tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}

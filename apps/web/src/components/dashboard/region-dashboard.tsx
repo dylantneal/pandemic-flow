@@ -14,6 +14,7 @@ import type { RegionConfig } from "@/lib/dashboard/types";
 import {
   getLatestRegionMetric,
   getRegionTimeseries,
+  getSiteHistoricalMetrics,
   getSiteLatestMetrics,
   getSitesForRegion,
 } from "@/lib/supabase/metrics";
@@ -24,11 +25,12 @@ export async function RegionDashboard({ config }: { config: RegionConfig }) {
   const cookOnly = config.regionType === "county";
   const isIllinois = config.slug === "illinois";
 
-  const [latest, timeseries, sites, totalSites] = await Promise.all([
+  const [latest, timeseries, sites, totalSites, historicalSites] = await Promise.all([
     getLatestRegionMetric(config.regionType, config.regionId),
     getRegionTimeseries(config.regionType, config.regionId),
     getSiteLatestMetrics({ cookCountyOnly: cookOnly }),
     getSitesForRegion({ cookCountyOnly: cookOnly }),
+    isIllinois ? getSiteHistoricalMetrics({ fromDate: "2021-11-22" }) : Promise.resolve([]),
   ]);
 
   const latestWeek = latest?.week_start ?? sites[0]?.week_start ?? null;
@@ -59,7 +61,11 @@ export async function RegionDashboard({ config }: { config: RegionConfig }) {
                 : ""}
             </p>
           </div>
-          <IllinoisCountyMap sites={sites} weekStart={latestWeek} />
+          <IllinoisCountyMap
+            sites={sites}
+            weekStart={latestWeek}
+            historicalSites={historicalSites}
+          />
         </section>
 
         <section className="space-y-6" aria-labelledby="metrics-heading">

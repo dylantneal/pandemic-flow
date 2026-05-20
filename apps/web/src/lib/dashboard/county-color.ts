@@ -1,16 +1,21 @@
 /** Diverging activity-index fill for county chloropleth. */
 
-export const ACTIVITY_DOMAIN = { low: -1.75, mid: 0, high: 1.0 } as const;
+export const ACTIVITY_DOMAIN = { low: -1.75, mid: 0, high: 3.0 } as const;
 
 export const NO_DATA_FILL = "url(#pfNoDataPattern)";
 
-/** OKLCH stops: low (cream) → mid (tan) → high (primary orange). */
+/**
+ * OKLCH stops: low (cream) → neutral (tan) → orange → burnt orange → dark red-brown.
+ * Extended upper bound to 3.0 so values above +1 still show meaningful colour variation.
+ */
 const STOPS: Array<{ t: number; l: number; c: number; h: number }> = [
   { t: -1.75, l: 0.97, c: 0.02, h: 75 },
   { t: -0.75, l: 0.94, c: 0.03, h: 70 },
-  { t: 0, l: 0.88, c: 0.05, h: 65 },
-  { t: 0.35, l: 0.78, c: 0.1, h: 55 },
-  { t: 1.0, l: 0.62, c: 0.18, h: 45 },
+  { t: 0,    l: 0.88, c: 0.05, h: 65 },
+  { t: 0.35, l: 0.78, c: 0.10, h: 55 },
+  { t: 1.0,  l: 0.62, c: 0.18, h: 45 },
+  { t: 1.75, l: 0.50, c: 0.20, h: 38 },
+  { t: 3.0,  l: 0.36, c: 0.16, h: 32 },
 ];
 
 function clamp(value: number, min: number, max: number): number {
