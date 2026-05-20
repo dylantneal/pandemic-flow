@@ -1,5 +1,5 @@
 import { ActivityTimeseries } from "@/components/dashboard/activity-timeseries";
-import { ForecastPlaceholder } from "@/components/dashboard/forecast-placeholder";
+import { ForecastChart } from "@/components/dashboard/forecast-chart";
 import { IndexExplainer } from "@/components/dashboard/index-explainer";
 import { IllinoisCountyMap } from "@/components/dashboard/illinois-county-map";
 import { MethodologyCard } from "@/components/dashboard/methodology-card";
@@ -18,6 +18,7 @@ import {
   getSiteLatestMetrics,
   getSitesForRegion,
 } from "@/lib/supabase/metrics";
+import { getLatestRegionForecast } from "@/lib/supabase/forecasts";
 
 const CDC_NWSS_URL = "https://www.cdc.gov/nwss/";
 
@@ -25,13 +26,17 @@ export async function RegionDashboard({ config }: { config: RegionConfig }) {
   const cookOnly = config.regionType === "county";
   const isIllinois = config.slug === "illinois";
 
-  const [latest, timeseries, sites, totalSites, historicalSites] = await Promise.all([
-    getLatestRegionMetric(config.regionType, config.regionId),
-    getRegionTimeseries(config.regionType, config.regionId),
-    getSiteLatestMetrics({ cookCountyOnly: cookOnly }),
-    getSitesForRegion({ cookCountyOnly: cookOnly }),
-    isIllinois ? getSiteHistoricalMetrics({ fromDate: "2021-11-22" }) : Promise.resolve([]),
-  ]);
+  const [latest, timeseries, sites, totalSites, historicalSites, forecast] =
+    await Promise.all([
+      getLatestRegionMetric(config.regionType, config.regionId),
+      getRegionTimeseries(config.regionType, config.regionId),
+      getSiteLatestMetrics({ cookCountyOnly: cookOnly }),
+      getSitesForRegion({ cookCountyOnly: cookOnly }),
+      isIllinois
+        ? getSiteHistoricalMetrics({ fromDate: "2021-11-22" })
+        : Promise.resolve([]),
+      getLatestRegionForecast(config.regionType, config.regionId),
+    ]);
 
   const latestWeek = latest?.week_start ?? sites[0]?.week_start ?? null;
   const reportingCount = sites.length || latest?.active_site_count;
@@ -112,7 +117,11 @@ export async function RegionDashboard({ config }: { config: RegionConfig }) {
           />
         </section>
 
-        <ForecastPlaceholder />
+        <ForecastChart
+          timeseries={timeseries}
+          forecast={forecast}
+          regionName={config.name}
+        />
       </div>
     );
   }
@@ -187,7 +196,11 @@ export async function RegionDashboard({ config }: { config: RegionConfig }) {
         />
       </section>
 
-      <ForecastPlaceholder />
+      <ForecastChart
+        timeseries={timeseries}
+        forecast={forecast}
+        regionName={config.name}
+      />
     </div>
   );
 }

@@ -93,7 +93,9 @@ The full data refresh runs via [`.github/workflows/weekly-data-update.yml`](../.
 1. Download CDC NWSS CSV and upsert raw rows + Storage snapshot
 2. Refresh `sites` and `clean_observations`
 3. Build `weekly_site_metrics` and `weekly_region_metrics`
-4. Optionally revalidate Vercel cache (when configured)
+4. Evaluate past forecasts (`prediction_actuals`, update `model_runs.metrics`)
+5. Generate latest baseline/ensemble predictions
+6. Optionally revalidate Vercel cache (when configured)
 
 **Schedule:** Saturday `13:30 UTC` (`cron: 30 13 * * 6`) — after the CDC’s typical Friday update.
 
@@ -129,6 +131,18 @@ For a manual local run (not scheduled):
 ```bash
 INGESTION_TRIGGER_TYPE=manual python scripts/run_weekly_pipeline.py
 ```
+
+## Baseline forecasts (Phase 6)
+
+See [PHASE6.md](PHASE6.md) for models, UI, and verification. Apply migration `20260521120000_phase6_forecasting.sql`, then:
+
+```bash
+npm run forecast:backfill    # rolling-origin history (~60 weeks)
+npm run forecast:evaluate    # score + update model_runs.metrics
+npm run forecast:generate    # latest origin only
+```
+
+No new GitHub secrets required. Forecast tables use the same `SUPABASE_SERVICE_ROLE_KEY` as the data pipeline.
 
 ### Verify after a run
 

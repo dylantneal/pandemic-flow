@@ -76,3 +76,46 @@ export const COOK_CONFIG: RegionConfig = {
   description:
     "Cook County and Chicago-area sewersheds. A metro-focused view of community viral shedding in wastewater.",
 };
+
+export type ForecastHorizon = {
+  horizon_weeks: number;
+  target_date: string;
+  predicted_activity_index: number | null;
+  lower_bound: number | null;
+  upper_bound: number | null;
+  predicted_trend: TrendLabel;
+  confidence_label: "low" | "medium" | "high" | null;
+};
+
+export type RegionForecast = {
+  forecast_origin_week: string;
+  model_name: string;
+  model_type: string;
+  horizons: ForecastHorizon[];
+};
+
+export type ModelRunRow = {
+  id: string;
+  model_name: string;
+  model_type: string;
+  version: string;
+  status: string;
+  metrics: Record<string, unknown> | null;
+  hyperparameters: Record<string, unknown> | null;
+  updated_at: string;
+};
+
+export type BaselineHorizonMetric = {
+  horizon_weeks: number;
+  mae: number | null;
+  rmse: number | null;
+  trend_accuracy: number | null;
+  n_evaluations: number;
+};
+
+export type BaselinePerformanceRow = {
+  model_name: string;
+  model_type: string;
+  horizons: BaselineHorizonMetric[];
+  total_evaluations: number;
+};

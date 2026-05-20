@@ -89,13 +89,28 @@ python scripts/build_weekly_metrics.py
 
 ## Weekly automated pipeline
 
-Run the full chain (ingest → clean → weekly metrics) locally:
+Run the full chain (ingest → clean → weekly metrics → evaluate → generate forecasts) locally:
 
 ```bash
 pip install -r requirements.txt
 python scripts/run_weekly_pipeline.py
 # or: npm run pipeline:weekly
 ```
+
+## Baseline forecasts (Phase 6)
+
+After weekly metrics are built and Phase 6 migration is applied:
+
+```bash
+pip install -r requirements.txt
+# Initial backfill of rolling-origin predictions (~60 weeks)
+npm run forecast:backfill
+npm run forecast:evaluate
+# Latest-origin only (weekly default)
+npm run forecast:generate
+```
+
+Dashboard shows ensemble forecasts on Illinois/Cook County pages. Model evaluation is at `/model-lab`.
 
 **GitHub Actions** runs this automatically every **Saturday ~13:30 UTC** via [`.github/workflows/weekly-data-update.yml`](.github/workflows/weekly-data-update.yml). You can also trigger it manually from the Actions tab (`workflow_dispatch`).
 
@@ -113,7 +128,7 @@ See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for setup details.
 
 ## Documentation
 
-Research and architecture documents live in [`docs/`](docs/).
+Research and architecture documents live in [`docs/`](docs/). For database tables, pipeline layers, and modeling data, see [`docs/DATA.md`](docs/DATA.md). For Phase 6 baseline forecasting (models, pipeline, UI), see [`docs/PHASE6.md`](docs/PHASE6.md).
 
 ## License
 

@@ -22,7 +22,10 @@
     "transform:clean": "python scripts/transform_clean_observations.py",
     "clean:cdc": "python scripts/run_cleaning.py",
     "build:weekly": "python scripts/build_weekly_metrics.py",
-    "pipeline:weekly": "python scripts/run_weekly_pipeline.py"
+    "pipeline:weekly": "python scripts/run_weekly_pipeline.py",
+    "forecast:generate": "python scripts/generate_forecasts.py",
+    "forecast:evaluate": "python scripts/evaluate_forecasts.py",
+    "forecast:backfill": "python scripts/generate_forecasts.py --backfill-weeks 60"
   },
   "engines": {
     "node": ">=20"

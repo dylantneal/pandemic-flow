@@ -10,6 +10,7 @@ const navItems = [
   { href: "/illinois", label: "Illinois" },
   { href: "/cook-county", label: "Cook County" },
   { href: "/methods", label: "Methods" },
+  { href: "/model-lab", label: "Model Lab" },
   { href: "/about", label: "About" },
 ] as const;
 

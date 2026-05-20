@@ -1793,6 +1793,8 @@ Definition of done:
 
 ### Phase 6: Baseline Models
 
+**Implemented.** Full write-up: [PHASE6.md](PHASE6.md)
+
 Goal:
 
 ```text

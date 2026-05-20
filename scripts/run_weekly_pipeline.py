@@ -35,6 +35,8 @@ from scripts.lib.clean_transform import transform_clean_observations  # noqa: E4
 from scripts.lib.config import IngestionConfig, load_config  # noqa: E402
 from scripts.lib.ingestion import ingest_cdc  # noqa: E402
 from scripts.lib.sites_refresh import refresh_sites  # noqa: E402
+from scripts.lib.forecast_eval import evaluate_forecasts  # noqa: E402
+from scripts.lib.forecast_runner import generate_forecasts  # noqa: E402
 from scripts.lib.weekly_metrics_build import build_weekly_metrics  # noqa: E402
 
 logger = logging.getLogger(__name__)
@@ -89,11 +91,19 @@ def run_weekly_pipeline(config: IngestionConfig | None = None) -> int:
     _setup_logging()
     cfg = config or load_config()
 
+    def _evaluate_forecasts(cfg: IngestionConfig) -> int:
+        return evaluate_forecasts(cfg)
+
+    def _generate_forecasts(cfg: IngestionConfig) -> int:
+        return generate_forecasts(cfg, backfill_weeks=0)
+
     steps: list[tuple[str, StepFn]] = [
         ("ingest_cdc", ingest_cdc),
         ("refresh_sites", refresh_sites),
         ("transform_clean_observations", transform_clean_observations),
         ("build_weekly_metrics", build_weekly_metrics),
+        ("evaluate_forecasts", _evaluate_forecasts),
+        ("generate_forecasts", _generate_forecasts),
     ]
 
     logger.info(

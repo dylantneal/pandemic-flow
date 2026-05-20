@@ -15,3 +15,5 @@ npm run db:stop
 - `public.app_status` — health/metadata row for connectivity checks (RLS public read)
 
 Phase 2 adds CDC wastewater tables per the architecture plan.
+
+Phase 6 adds `model_runs`, `predictions`, and `prediction_actuals` for baseline forecasting.
