@@ -164,7 +164,9 @@ export async function getSiteHistoricalMetrics(options?: {
 }): Promise<SiteMetricRow[]> {
   const supabase = createServerClient();
 
-  // PostgREST caps responses at 1000 rows; paginate to get all history.
+  // PostgREST caps responses at 1000 rows. Get the total count first, then
+  // fetch all pages concurrently so the full history loads in one round-trip
+  // instead of 18+ sequential calls (which would exceed Vercel's 10 s limit).
   const PAGE_SIZE = 1000;
 
   let fromDate: string | undefined;
@@ -186,28 +188,40 @@ export async function getSiteHistoricalMetrics(options?: {
     }
   }
 
-  const allMetrics: Record<string, unknown>[] = [];
-  let offset = 0;
+  // 1. Count total matching rows
+  let countQuery = supabase
+    .from("weekly_site_metrics")
+    .select("*", { count: "exact", head: true })
+    .eq("state_territory", IL_STATE_DB);
+  if (fromDate) countQuery = countQuery.gte("week_start", fromDate);
 
-  while (true) {
+  const { count, error: countError } = await countQuery;
+  if (countError || !count) {
+    console.error("getSiteHistoricalMetrics count:", countError?.message);
+    return [];
+  }
+
+  // 2. Fetch all pages in parallel
+  const pageCount = Math.ceil(count / PAGE_SIZE);
+  const pagePromises = Array.from({ length: pageCount }, (_, i) => {
     let q = supabase
       .from("weekly_site_metrics")
       .select(`${SITE_METRIC_COLUMNS}, week_start`)
       .eq("state_territory", IL_STATE_DB)
       .order("week_start", { ascending: true })
-      .range(offset, offset + PAGE_SIZE - 1);
-
+      .range(i * PAGE_SIZE, (i + 1) * PAGE_SIZE - 1);
     if (fromDate) q = q.gte("week_start", fromDate);
+    return q;
+  });
 
-    const { data: page, error } = await q;
+  const pages = await Promise.all(pagePromises);
+  const allMetrics: Record<string, unknown>[] = [];
+  for (const { data: page, error } of pages) {
     if (error) {
-      console.error("getSiteHistoricalMetrics:", error.message);
-      break;
+      console.error("getSiteHistoricalMetrics page:", error.message);
+      continue;
     }
-    if (!page || page.length === 0) break;
-    allMetrics.push(...(page as Record<string, unknown>[]));
-    if (page.length < PAGE_SIZE) break;
-    offset += PAGE_SIZE;
+    if (page) allMetrics.push(...(page as Record<string, unknown>[]));
   }
 
   if (allMetrics.length === 0) return [];
