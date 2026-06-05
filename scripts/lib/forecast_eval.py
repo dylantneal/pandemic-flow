@@ -11,6 +11,8 @@ from scripts.lib.forecast_db import (
     compute_and_store_metrics,
     create_client_from_config,
     fetch_model_run_ids,
+    fetch_neural_ode_model_run_ids,
+    fetch_scorable_predictions,
     fetch_unscored_predictions,
     insert_prediction_actuals,
 )
@@ -32,28 +34,48 @@ def _actual_trend(actual: float, origin_actual: float | None) -> str:
     return trend_from_change(actual - origin_actual)
 
 
-def evaluate_forecasts(config: IngestionConfig | None = None) -> int:
+def evaluate_forecasts(
+    config: IngestionConfig | None = None,
+    *,
+    neural_ode_version: str | None = None,
+) -> int:
     _setup_logging()
     cfg = config or load_config()
     client = create_client_from_config(cfg)
 
-    unscored = fetch_unscored_predictions(client)
-    if not unscored:
-        logger.info("No unscored predictions with available actuals")
+    if neural_ode_version:
+        run_ids = fetch_neural_ode_model_run_ids(client, neural_ode_version)
+        if not run_ids:
+            logger.warning("No neural_ode model_runs for version %s", neural_ode_version)
+        to_score = fetch_scorable_predictions(
+            client,
+            model_run_ids=run_ids or None,
+            include_scored=True,
+        )
+        score_label = f"Rescoring {len(to_score)} predictions for neural_ode v{neural_ode_version}"
     else:
-        logger.info("Scoring %d predictions", len(unscored))
+        to_score = fetch_unscored_predictions(client)
+        score_label = f"Scoring {len(to_score)} unscored predictions"
 
-        # Origin actuals for trend correctness
+    if not to_score:
+        logger.info("No predictions with available actuals to score")
+    else:
+        logger.info(score_label)
+
+        # Origin actuals and context for trend / regime / quality segmentation
         from scripts.lib.forecast_db import REGIONS, fetch_region_history
 
         origin_lookup: dict[tuple[str, str, str], float] = {}
         for entity_type, entity_id, _ in REGIONS:
-            history = fetch_region_history(client, entity_type, entity_id)
+            history = fetch_region_history(
+                client, entity_type, entity_id, with_covariates=True
+            )
             for pt in history:
-                origin_lookup[(entity_type, entity_id, pt.week_start.isoformat())] = pt.value
+                key = (entity_type, entity_id, pt.week_start.isoformat())
+                origin_lookup[key] = pt.value
 
         actual_rows: list[dict] = []
-        for pred in unscored:
+        for pred in to_score:
             actual = float(pred["_actual"])
             predicted = float(pred["predicted_activity_index"])
             abs_err = abs(actual - predicted)
@@ -84,21 +106,46 @@ def evaluate_forecasts(config: IngestionConfig | None = None) -> int:
                 }
             )
 
-        inserted = insert_prediction_actuals(client, actual_rows)
-        logger.info("Inserted %d prediction_actuals rows", inserted)
+        upserted = insert_prediction_actuals(client, actual_rows)
+        logger.info("Upserted %d prediction_actuals rows", upserted)
 
-    # Recompute metrics for all model runs
-    model_run_ids = fetch_model_run_ids(client)
-    for model_name, run_id in model_run_ids.items():
-        metrics = compute_and_store_metrics(client, run_id)
-        n = metrics.get("total_evaluations", 0)
-        logger.info("Updated metrics for %s: %d evaluations", model_name, n)
+    # Recompute metrics for model runs
+    if neural_ode_version:
+        response = (
+            client.table("model_runs")
+            .select("id, model_name, version")
+            .eq("model_type", "neural_ode")
+            .eq("version", neural_ode_version)
+            .execute()
+        )
+        targets = [(r["model_name"], r["id"]) for r in (response.data or [])]
+        for model_name, run_id in targets:
+            metrics = compute_and_store_metrics(client, str(run_id))
+            n = metrics.get("total_evaluations", 0)
+            logger.info("Updated metrics for %s v%s: %d evaluations", model_name, neural_ode_version, n)
+    else:
+        model_run_ids = fetch_model_run_ids(client)
+        for model_name, run_id in model_run_ids.items():
+            metrics = compute_and_store_metrics(client, run_id)
+            n = metrics.get("total_evaluations", 0)
+            logger.info("Updated metrics for %s: %d evaluations", model_name, n)
 
     return 0
 
 
-def main() -> int:
-    return evaluate_forecasts()
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Score predictions and update model metrics")
+    parser.add_argument(
+        "--neural-ode-version",
+        help=(
+            "Rescore all neural_ode predictions at this version and recompute "
+            "their model_runs metrics (gate loop)"
+        ),
+    )
+    args = parser.parse_args(argv)
+    return evaluate_forecasts(neural_ode_version=args.neural_ode_version)
 
 
 if __name__ == "__main__":

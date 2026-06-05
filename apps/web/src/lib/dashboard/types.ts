@@ -119,3 +119,37 @@ export type BaselinePerformanceRow = {
   horizons: BaselineHorizonMetric[];
   total_evaluations: number;
 };
+
+export type ForecastViewMode = "ensemble" | "neural_ode" | "both";
+
+export type DerivativePoint = {
+  t_offset_days: number;
+  predicted_value: number;
+  predicted_derivative: number;
+  /** ISO date for chart axis (origin + offset days). */
+  chart_date: string;
+};
+
+export type DerivativeSeries = {
+  forecast_origin_week: string;
+  model_name: string;
+  points: DerivativePoint[];
+};
+
+export type NeuralOdePerformanceRow = {
+  model_name: string;
+  version: string;
+  status: string;
+  entity_label: string;
+  horizons: BaselineHorizonMetric[];
+  total_evaluations: number;
+  interval_coverage?: number | null;
+  by_regime?: Record<
+    string,
+    { mae?: number | null; rmse?: number | null; n_evaluations?: number }
+  >;
+  by_quality_segment?: Record<
+    string,
+    { mae?: number | null; rmse?: number | null; n_evaluations?: number }
+  >;
+};

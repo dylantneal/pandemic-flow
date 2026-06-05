@@ -37,6 +37,7 @@ from scripts.lib.ingestion import ingest_cdc  # noqa: E402
 from scripts.lib.sites_refresh import refresh_sites  # noqa: E402
 from scripts.lib.forecast_eval import evaluate_forecasts  # noqa: E402
 from scripts.lib.forecast_runner import generate_forecasts  # noqa: E402
+from scripts.lib.neural_ode.infer_runner import infer_neural_ode  # noqa: E402
 from scripts.lib.weekly_metrics_build import build_weekly_metrics  # noqa: E402
 
 logger = logging.getLogger(__name__)
@@ -97,6 +98,9 @@ def run_weekly_pipeline(config: IngestionConfig | None = None) -> int:
     def _generate_forecasts(cfg: IngestionConfig) -> int:
         return generate_forecasts(cfg, backfill_weeks=0)
 
+    def _infer_neural_ode(cfg: IngestionConfig) -> int:
+        return infer_neural_ode(cfg, backfill_weeks=0)
+
     steps: list[tuple[str, StepFn]] = [
         ("ingest_cdc", ingest_cdc),
         ("refresh_sites", refresh_sites),
@@ -104,6 +108,7 @@ def run_weekly_pipeline(config: IngestionConfig | None = None) -> int:
         ("build_weekly_metrics", build_weekly_metrics),
         ("evaluate_forecasts", _evaluate_forecasts),
         ("generate_forecasts", _generate_forecasts),
+        ("infer_neural_ode", _infer_neural_ode),
     ]
 
     logger.info(

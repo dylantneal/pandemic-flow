@@ -1,5 +1,5 @@
 import { ActivityTimeseries } from "@/components/dashboard/activity-timeseries";
-import { ForecastChart } from "@/components/dashboard/forecast-chart";
+import { ForecastSection } from "@/components/dashboard/forecast-section";
 import { IndexExplainer } from "@/components/dashboard/index-explainer";
 import { IllinoisCountyMap } from "@/components/dashboard/illinois-county-map";
 import { MethodologyCard } from "@/components/dashboard/methodology-card";
@@ -18,7 +18,7 @@ import {
   getSiteLatestMetrics,
   getSitesForRegion,
 } from "@/lib/supabase/metrics";
-import { getLatestRegionForecast } from "@/lib/supabase/forecasts";
+import { getRegionForecastsBundle } from "@/lib/supabase/forecasts";
 
 const CDC_NWSS_URL = "https://www.cdc.gov/nwss/";
 
@@ -26,7 +26,7 @@ export async function RegionDashboard({ config }: { config: RegionConfig }) {
   const cookOnly = config.regionType === "county";
   const isIllinois = config.slug === "illinois";
 
-  const [latest, timeseries, sites, totalSites, historicalSites, forecast] =
+  const [latest, timeseries, sites, totalSites, historicalSites, forecastBundle] =
     await Promise.all([
       getLatestRegionMetric(config.regionType, config.regionId),
       getRegionTimeseries(config.regionType, config.regionId),
@@ -35,7 +35,7 @@ export async function RegionDashboard({ config }: { config: RegionConfig }) {
       isIllinois
         ? getSiteHistoricalMetrics({ fromDate: "2021-11-22" })
         : Promise.resolve([]),
-      getLatestRegionForecast(config.regionType, config.regionId),
+      getRegionForecastsBundle(config.regionType, config.regionId),
     ]);
 
   const latestWeek = latest?.week_start ?? sites[0]?.week_start ?? null;
@@ -117,9 +117,12 @@ export async function RegionDashboard({ config }: { config: RegionConfig }) {
           />
         </section>
 
-        <ForecastChart
+        <ForecastSection
           timeseries={timeseries}
-          forecast={forecast}
+          ensembleForecast={forecastBundle.ensemble}
+          neuralOdeForecast={forecastBundle.neuralOde}
+          derivatives={forecastBundle.derivatives}
+          neuralOdeAvailable={forecastBundle.neuralOdeAvailable}
           regionName={config.name}
         />
       </div>
@@ -196,9 +199,12 @@ export async function RegionDashboard({ config }: { config: RegionConfig }) {
         />
       </section>
 
-      <ForecastChart
+      <ForecastSection
         timeseries={timeseries}
-        forecast={forecast}
+        ensembleForecast={forecastBundle.ensemble}
+        neuralOdeForecast={forecastBundle.neuralOde}
+        derivatives={forecastBundle.derivatives}
+        neuralOdeAvailable={forecastBundle.neuralOdeAvailable}
         regionName={config.name}
       />
     </div>

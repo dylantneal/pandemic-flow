@@ -321,7 +321,17 @@ After migration and first backfill:
 
 ## What's next (Phase 7)
 
-Phase 7 adds a Neural ODE model trained on weekly region activity, saves artifacts to Supabase Storage, writes predictions to the same `predictions` table, and compares performance against these baselines in Model Lab.
+Phase 7 adds a vanilla Neural ODE trained on weekly region activity, saves artifacts to Supabase Storage, writes `predictions` and `prediction_derivatives`, and compares performance against these baselines in Model Lab.
+
+**Step 2 (complete):** `prediction_derivatives` table, `model-artifacts` bucket, PyTorch deps — see [PHASE7_DESIGN.md](PHASE7_DESIGN.md) and [DEPLOYMENT.md](DEPLOYMENT.md).
+
+**Step 4 (complete):** training loop, artifact upload, `train_neural_ode.py` CLI.
+
+**Step 5 (complete):** `infer_neural_ode.py`, `predictions` + `prediction_derivatives`, weekly pipeline hook.
+
+**Step 6 (complete):** `promote_model.py` with numeric promotion gate vs baselines.
+
+**Step 7+ (pending):** frontend derivative chart, Model Lab Neural ODE views.
 
 See [pandemic-flow-architecture-plan.md](pandemic-flow-architecture-plan.md) § Phase 7.
 

@@ -25,7 +25,18 @@
     "pipeline:weekly": "python scripts/run_weekly_pipeline.py",
     "forecast:generate": "python scripts/generate_forecasts.py",
     "forecast:evaluate": "python scripts/evaluate_forecasts.py",
-    "forecast:backfill": "python scripts/generate_forecasts.py --backfill-weeks 60"
+    "forecast:backfill": "python scripts/generate_forecasts.py --backfill-weeks 60",
+    "train:neural-ode": "python scripts/train_neural_ode.py",
+    "train:neural-ode:dry": "python scripts/train_neural_ode.py --dry-run",
+    "train:neural-ode:gate": "python scripts/run_neural_ode_gate_loop.py",
+    "train:neural-ode:gate:check": "python scripts/run_neural_ode_gate_loop.py --skip-train",
+    "train:neural-ode:h4-abstain": "python scripts/run_neural_ode_gate_loop.py --version 1.7.6-shrinkage-h4-abstain --profile shrinkage_correction_h4_abstain",
+    "compare:neural-ode:h4-abstain": "python scripts/compare_shrinkage_h4_abstain.py",
+    "train:neural-ode:ablation": "python scripts/run_neural_ode_ablation.py",
+    "infer:neural-ode": "python scripts/infer_neural_ode.py",
+    "infer:neural-ode:backfill": "python scripts/infer_neural_ode.py --backfill-weeks 60",
+    "promote:neural-ode": "python scripts/promote_model.py",
+    "promote:neural-ode:check": "python scripts/promote_model.py --check-only"
   },
   "engines": {
     "node": ">=20"

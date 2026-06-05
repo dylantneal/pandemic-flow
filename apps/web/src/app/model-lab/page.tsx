@@ -1,4 +1,7 @@
+import Link from "next/link";
+
 import { AppShell } from "@/components/layout/app-shell";
+import { ModelLabNav } from "@/components/model-lab/model-lab-nav";
 import { BaselineMetricsTable } from "@/components/model-lab/baseline-metrics-table";
 import { HorizonErrorChart } from "@/components/model-lab/horizon-error-chart";
 import { ModelRunCards } from "@/components/model-lab/model-run-cards";
@@ -24,20 +27,29 @@ export default async function ModelLabPage() {
   return (
     <AppShell>
       <div className="space-y-10">
-        <header className="space-y-3">
+        <header className="space-y-4">
+          <ModelLabNav />
+          <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-            Model lab
+            Phase 6 · Model lab
           </p>
           <h1 className="text-3xl font-semibold tracking-tight">
             Baseline forecast evaluation
           </h1>
           <p className="max-w-3xl text-muted-foreground leading-relaxed">
-            Honest short-horizon baselines establish a comparison bar before Neural
-            ODE modeling. Forecasts use rolling-origin backtests on weekly{" "}
+            <strong>Ensemble</strong> forecasts power production dashboards. These
+            baselines establish the comparison bar on weekly{" "}
             <strong>weighted activity index</strong> for Illinois and Cook County.
-            Intervals reflect residual spread from past forecast errors, not clinical
-            uncertainty.
+            The Neural ODE is documented separately as a{" "}
+            <Link
+              href="/model-lab/neural-ode"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              learned dynamics research layer
+            </Link>{" "}
+            — calibrated and useful at short horizons, not promoted at 4 weeks.
           </p>
+          </div>
         </header>
 
         <section className="space-y-4" aria-labelledby="runs-heading">

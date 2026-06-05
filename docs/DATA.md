@@ -8,7 +8,7 @@ For deployment and environment setup, see [DEPLOYMENT.md](DEPLOYMENT.md). For pr
 
 ## Overview
 
-COVID Flow ingests public CDC NWSS data weekly, cleans and filters it for Illinois and Cook County, rolls observations up to weekly metrics, and serves them through a Next.js dashboard. The database is the system of record: raw samples, cleaned observations, precomputed weekly aggregates, and (planned) model outputs.
+COVID Flow ingests public CDC NWSS data weekly, cleans and filters it for Illinois and Cook County, rolls observations up to weekly metrics, and serves them through a Next.js dashboard. The database is the system of record: raw samples, cleaned observations, precomputed weekly aggregates, baseline and ensemble forecasts, Neural ODE research candidates, and scored prediction actuals.
 
 ```text
 CDC NWSS CSV/API
@@ -31,11 +31,13 @@ CDC NWSS CSV/API
 │ metrics           │     │ (dashboard time series)     │
 └───────────────────┘     └─────────────────────────────┘
         │
-        ▼ (Phase 6 — baseline forecasting)
+        ▼ (Phase 6–7 forecasting)
 ┌───────────────────┐     ┌─────────────────────────────┐
 │ model_runs        │────▶│ predictions                 │
-└───────────────────┘     │ prediction_actuals          │
-                          └─────────────────────────────┘
+│ (baselines +      │     │ prediction_actuals          │
+│  neural_ode       │     │ prediction_derivatives      │
+│  candidates)      │     │ (Neural ODE research)       │
+└───────────────────┘     └─────────────────────────────┘
 ```
 
 ---
@@ -325,7 +327,7 @@ Migration: `20260521120000_phase6_forecasting.sql`
 | `training_start_date`, `training_end_date` | date | Fit window (optional for baselines) |
 | `validation_start_date`, `validation_end_date` | date | Holdout window |
 | `git_commit` | text | Code version |
-| `artifact_path` | text | Storage path for saved model (Phase 7+) |
+| `artifact_path` | text | Storage path for saved model checkpoint (Neural ODE) |
 | `hyperparameters` | jsonb | Training config |
 | `metrics` | jsonb | MAE, RMSE, trend accuracy, `residual_sigma_by_horizon` |
 
@@ -359,6 +361,20 @@ Filled after actual data arrives to score past forecasts.
 | `absolute_error`, `squared_error` | numeric | |
 | `trend_correct` | boolean | Did trend direction match |
 
+#### `prediction_derivatives` (Phase 7, Neural ODE)
+
+Migration: `20260521130000_phase7_neural_ode.sql`. Sub-week Neural ODE trajectory samples.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `prediction_id` | uuid FK → `predictions` | Parent horizon row |
+| `step_idx` | integer | Local 0..6 within this prediction’s 7-day segment |
+| `t_offset_days` | numeric | Absolute days from `forecast_origin_week` (1..28) |
+| `predicted_value` | numeric | Activity index at step (app rounds to 4 decimals) |
+| `predicted_derivative` | numeric | dx/dt at step (app rounds to 4 decimals) |
+
+UI stitches derivatives for one origin by ordering on `t_offset_days`. See [PHASE7_DESIGN.md](PHASE7_DESIGN.md).
+
 ---
 
 ## Supabase Storage
@@ -366,7 +382,7 @@ Filled after actual data arrives to score past forecasts.
 | Bucket | Contents |
 |--------|----------|
 | `raw-cdc-wastewater-snapshots` | Versioned CSV snapshots per ingest (multi-part if large) |
-| `model-artifacts` | Saved model weights and configs (Phase 7+) |
+| `model-artifacts` | Saved Neural ODE checkpoints and related artifacts |
 | `exports` | Optional precomputed JSON for the dashboard |
 
 Paths look like: `cdc-wastewater/YYYY/MM/DD/cdc_wastewater_<timestamp>_partNNofNN.csv`
@@ -385,6 +401,7 @@ Paths look like: `cdc-wastewater/YYYY/MM/DD/cdc_wastewater_<timestamp>_partNNofN
 | `model_runs` | Yes | Pipeline |
 | `predictions` | Yes | Pipeline |
 | `prediction_actuals` | Yes | Pipeline |
+| `prediction_derivatives` | Yes | Pipeline |
 | `raw_cdc_wastewater_samples` | No | Pipeline |
 | `ingestion_runs`, `data_sources` | No | Pipeline |
 
@@ -494,6 +511,7 @@ Before training baselines or Neural ODE models, confirm:
 | Document | Topic |
 |----------|--------|
 | [PHASE6.md](PHASE6.md) | Baseline forecasting: models, pipeline, UI, verification |
+| [PHASE7_DESIGN.md](PHASE7_DESIGN.md) | Neural ODE technical design (Step 2: schema + deps) |
 | [CDC_DataAnalysis.md](CDC_DataAnalysis.md) | Source dataset and column semantics |
 | [BiologicalPerspective.md](BiologicalPerspective.md) | Wastewater biology and interpretation limits |
 | [pandemic-flow-architecture-plan.md](pandemic-flow-architecture-plan.md) | Full system design and phase plan |

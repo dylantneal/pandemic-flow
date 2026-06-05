@@ -2,3 +2,7 @@ python-dotenv>=1.0.0
 supabase>=2.10.0
 httpx>=0.27.0
 pytest>=8.0.0
+# Phase 7 Neural ODE (CPU wheels — see docs/PHASE7_DESIGN.md)
+torch==2.4.1
+torchdiffeq==0.2.5
+numpy>=1.26,<2.3

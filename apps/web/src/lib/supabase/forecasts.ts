@@ -2,8 +2,10 @@ import { createServerClient } from "@/lib/supabase/server";
 import type {
   BaselineHorizonMetric,
   BaselinePerformanceRow,
+  DerivativeSeries,
   ForecastHorizon,
   ModelRunRow,
+  NeuralOdePerformanceRow,
   RegionForecast,
   TrendLabel,
 } from "@/lib/dashboard/types";
@@ -179,6 +181,163 @@ export async function getBaselinePerformance(): Promise<BaselinePerformanceRow[]
       total_evaluations: Number(run.metrics?.total_evaluations ?? 0),
     }))
     .filter((r) => r.horizons.length > 0 || r.total_evaluations > 0);
+}
+
+export function neuralOdeModelName(regionId: string): string {
+  return `neural_ode_${regionId}`;
+}
+
+export async function getProductionNeuralOdeRun(
+  regionId: string,
+): Promise<ModelRunRow | null> {
+  const modelName = neuralOdeModelName(regionId);
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("model_runs")
+    .select(MODEL_RUN_COLUMNS)
+    .eq("model_name", modelName)
+    .eq("status", "production")
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("getProductionNeuralOdeRun:", error.message);
+    return null;
+  }
+  return (data as ModelRunRow | null) ?? null;
+}
+
+export async function getNeuralOdeDerivativeSeries(
+  regionType: string,
+  regionId: string,
+): Promise<DerivativeSeries | null> {
+  const modelRun = await getProductionNeuralOdeRun(regionId);
+  if (!modelRun) return null;
+
+  const forecast = await getLatestRegionForecast(
+    regionType,
+    regionId,
+    modelRun.model_name,
+  );
+  if (!forecast) return null;
+
+  const supabase = createServerClient();
+  const { data: preds, error: predErr } = await supabase
+    .from("predictions")
+    .select("id")
+    .eq("entity_type", regionType)
+    .eq("entity_id", regionId)
+    .eq("model_run_id", modelRun.id)
+    .eq("forecast_origin_week", forecast.forecast_origin_week);
+
+  if (predErr || !preds?.length) {
+    console.error("getNeuralOdeDerivativeSeries predictions:", predErr?.message);
+    return null;
+  }
+
+  const predIds = preds.map((p) => p.id as string);
+  const { data: derivs, error: derivErr } = await supabase
+    .from("prediction_derivatives")
+    .select("t_offset_days, predicted_value, predicted_derivative")
+    .in("prediction_id", predIds)
+    .order("t_offset_days", { ascending: true });
+
+  if (derivErr || !derivs?.length) {
+    return null;
+  }
+
+  const origin = forecast.forecast_origin_week;
+  const points = derivs.map((row) => {
+    const offset = Number(row.t_offset_days);
+    const chartDate = addDaysToIso(origin, offset);
+    return {
+      t_offset_days: offset,
+      predicted_value: Number(row.predicted_value),
+      predicted_derivative: Number(row.predicted_derivative),
+      chart_date: chartDate,
+    };
+  });
+
+  return {
+    forecast_origin_week: origin,
+    model_name: modelRun.model_name,
+    points,
+  };
+}
+
+function addDaysToIso(isoDate: string, days: number): string {
+  const base = new Date(`${isoDate.slice(0, 10)}T12:00:00Z`);
+  base.setUTCDate(base.getUTCDate() + Math.round(days));
+  return base.toISOString().slice(0, 10);
+}
+
+export async function getNeuralOdeRuns(): Promise<ModelRunRow[]> {
+  const runs = await getAllModelRuns();
+  return runs.filter((r) => r.model_type === "neural_ode");
+}
+
+export async function getNeuralOdePerformance(): Promise<NeuralOdePerformanceRow[]> {
+  const runs = await getNeuralOdeRuns();
+  const entityLabels: Record<string, string> = {
+    neural_ode_IL: "Illinois",
+    neural_ode_17031: "Cook County",
+  };
+
+  return runs
+    .map((run) => {
+      const metrics = run.metrics ?? {};
+      const interval = metrics.interval_coverage as
+        | { overall?: number | null }
+        | undefined;
+      return {
+        model_name: run.model_name,
+        version: run.version,
+        status: run.status,
+        entity_label: entityLabels[run.model_name] ?? run.model_name,
+        horizons: parseHorizonMetrics(run.metrics),
+        total_evaluations: Number(run.metrics?.total_evaluations ?? 0),
+        interval_coverage: interval?.overall ?? null,
+        by_regime: (metrics.by_regime as NeuralOdePerformanceRow["by_regime"]) ?? undefined,
+        by_quality_segment:
+          (metrics.by_quality_segment as NeuralOdePerformanceRow["by_quality_segment"]) ??
+          undefined,
+      };
+    })
+    .filter((r) => r.horizons.length > 0 || r.total_evaluations > 0);
+}
+
+export async function getRegionForecastsBundle(
+  regionType: string,
+  regionId: string,
+): Promise<{
+  ensemble: RegionForecast | null;
+  neuralOde: RegionForecast | null;
+  derivatives: DerivativeSeries | null;
+  neuralOdeAvailable: boolean;
+}> {
+  const [ensemble, neuralRun] = await Promise.all([
+    getLatestRegionForecast(regionType, regionId, ENSEMBLE_MODEL_NAME),
+    getProductionNeuralOdeRun(regionId),
+  ]);
+
+  let neuralOde: RegionForecast | null = null;
+  let derivatives = null;
+
+  if (neuralRun) {
+    neuralOde = await getLatestRegionForecast(
+      regionType,
+      regionId,
+      neuralRun.model_name,
+    );
+    derivatives = await getNeuralOdeDerivativeSeries(regionType, regionId);
+  }
+
+  return {
+    ensemble,
+    neuralOde,
+    derivatives,
+    neuralOdeAvailable: Boolean(neuralRun),
+  };
 }
 
 export { ENSEMBLE_MODEL_NAME };

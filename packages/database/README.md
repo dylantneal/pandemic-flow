@@ -17,3 +17,5 @@ npm run db:stop
 Phase 2 adds CDC wastewater tables per the architecture plan.
 
 Phase 6 adds `model_runs`, `predictions`, and `prediction_actuals` for baseline forecasting.
+
+Phase 7 adds `prediction_derivatives` and the `model-artifacts` storage bucket for Neural ODE (see `docs/PHASE7_DESIGN.md`).

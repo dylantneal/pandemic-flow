@@ -24,6 +24,10 @@ WIDE_INTERVAL_THRESHOLD = 1.5
 class WeeklySeriesPoint:
     week_start: date
     value: float
+    quality_score: float | None = None
+    active_site_count: float | None = None
+    population_represented: float | None = None
+    week_over_week_change: float | None = None
 
 
 @dataclass(frozen=True)
