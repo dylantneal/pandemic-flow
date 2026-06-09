@@ -1,6 +1,9 @@
 # Phase 7 — Neural ODE
 
-Learned-dynamics forecasts on top of Phase 6 baselines. Design detail: [PHASE7_DESIGN.md](PHASE7_DESIGN.md).
+Learned-dynamics forecasts on top of Phase 6 baselines.
+
+- **How the model works (plain language):** [NEURAL_ODE_EXPLAINED.md](NEURAL_ODE_EXPLAINED.md)
+- **Design detail (schema, pipeline, decisions):** [PHASE7_DESIGN.md](PHASE7_DESIGN.md)
 
 ## Research framing
 

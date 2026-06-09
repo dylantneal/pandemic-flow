@@ -26,6 +26,7 @@ export type TimeseriesPoint = {
   trend_label: TrendLabel;
   active_site_count: number | null;
   quality_score: number | null;
+  week_over_week_change: number | null;
 };
 
 export type SiteMetricRow = {

@@ -4,7 +4,7 @@
 
 Phase 7 adds a vanilla Neural ODE on weekly region activity. The goal is **scientific honesty and infrastructure quality**, not vanity metric gains on ~470 weekly observations. Neural ODE must beat baselines on held-out rolling-origin evaluation before promotion to production dashboards.
 
-For Phase 6 baselines see [PHASE6.md](PHASE6.md). For schema see [DATA.md](DATA.md). For deployment see [DEPLOYMENT.md](DEPLOYMENT.md).
+For a plain-language model walkthrough see [NEURAL_ODE_EXPLAINED.md](NEURAL_ODE_EXPLAINED.md). For Phase 6 baselines see [PHASE6.md](PHASE6.md). For schema see [DATA.md](DATA.md). For deployment see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ---
 

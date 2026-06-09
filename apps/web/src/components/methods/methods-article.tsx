@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 import { BottomLine } from "@/components/dashboard/bottom-line";
 import { MethodologyCard } from "@/components/dashboard/methodology-card";
 import {
   methodsCitation,
+  methodsForecastsSection,
   methodsLede,
   methodsPlainTerms,
   methodsPullQuote,
@@ -13,6 +15,7 @@ import {
 const toc = [
   { id: "source", label: "Data source" },
   ...methodsSections.map((s) => ({ id: s.id, label: s.title })),
+  { id: methodsForecastsSection.id, label: methodsForecastsSection.title },
   { id: "cite", label: "How to cite" },
 ];
 
@@ -87,6 +90,51 @@ export function MethodsArticle() {
               </p>
             </section>
           ))}
+
+          <section
+            id={methodsForecastsSection.id}
+            className="scroll-mt-24 border-t border-border/80 pt-8"
+          >
+            <p className="text-sm font-semibold text-primary tabular-nums">
+              {methodsForecastsSection.number}
+            </p>
+            <h2 className="mt-2 text-xl font-semibold tracking-tight">
+              {methodsForecastsSection.title}
+            </h2>
+            <p className="mt-3 max-w-2xl leading-relaxed text-muted-foreground">
+              {methodsForecastsSection.body}
+            </p>
+            <p className="mt-3 max-w-2xl leading-relaxed text-muted-foreground">
+              {methodsForecastsSection.detail}
+            </p>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <Link
+                href="/model-lab"
+                className="group flex flex-col rounded-xl border border-border/80 bg-card px-4 py-4 shadow-sm transition-colors hover:border-primary/30 hover:bg-muted/20"
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold text-foreground group-hover:text-primary">
+                  {methodsForecastsSection.baselineLinkLabel}
+                  <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                </span>
+                <span className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {methodsForecastsSection.baselineLinkDescription}
+                </span>
+              </Link>
+              <Link
+                href="/model-lab/neural-ode"
+                className="group flex flex-col rounded-xl border border-border/80 bg-card px-4 py-4 shadow-sm transition-colors hover:border-primary/30 hover:bg-muted/20"
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold text-foreground group-hover:text-primary">
+                  {methodsForecastsSection.neuralOdeLinkLabel}
+                  <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                </span>
+                <span className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {methodsForecastsSection.neuralOdeLinkDescription}
+                </span>
+              </Link>
+            </div>
+          </section>
         </div>
 
         <BottomLine>

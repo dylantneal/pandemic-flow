@@ -511,6 +511,7 @@ Before training baselines or Neural ODE models, confirm:
 | Document | Topic |
 |----------|--------|
 | [PHASE6.md](PHASE6.md) | Baseline forecasting: models, pipeline, UI, verification |
+| [NEURAL_ODE_EXPLAINED.md](NEURAL_ODE_EXPLAINED.md) | How the Neural ODE works (plain language) |
 | [PHASE7_DESIGN.md](PHASE7_DESIGN.md) | Neural ODE technical design (Step 2: schema + deps) |
 | [CDC_DataAnalysis.md](CDC_DataAnalysis.md) | Source dataset and column semantics |
 | [BiologicalPerspective.md](BiologicalPerspective.md) | Wastewater biology and interpretation limits |

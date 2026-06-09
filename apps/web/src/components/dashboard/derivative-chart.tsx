@@ -25,7 +25,7 @@ import { formatShortDate } from "@/lib/dashboard/format";
 import type { DerivativeSeries } from "@/lib/dashboard/types";
 import { cn } from "@/lib/utils";
 
-const RATE_COLOR = "var(--chart-3)";
+const RATE_COLOR = "var(--forecast-neural)";
 const ZERO_COLOR = "var(--muted-foreground)";
 
 export function DerivativeChart({
@@ -55,9 +55,8 @@ export function DerivativeChart({
             <CardTitle className="text-lg">{derivativeExplainer.title}</CardTitle>
           </div>
           <CardDescription className="max-w-2xl leading-relaxed">
-            When a production Neural ODE model is active for {regionName}, this chart
-            shows how fast the model thinks activity is changing along the forecast
-            path. Run inference after training to populate derivative samples.
+            When a Neural ODE forecast is available for {regionName}, this chart shows
+            how fast the model thinks activity is changing along the forecast path.
           </CardDescription>
         </CardHeader>
         <CardContent>

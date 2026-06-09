@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, AlertTriangle } from "lucide-react";
 
 import {
   Card,
@@ -23,6 +23,11 @@ import {
 } from "@/components/ui/card";
 import { TrendChip } from "@/components/dashboard/trend-chip";
 import { forecastModelOptions } from "@/lib/copy/neural-ode-copy";
+import {
+  detectEnsembleReboundCaution,
+  detectStaleNeuralOverlayCaution,
+  shouldSoftenEnsembleBridge,
+} from "@/lib/dashboard/forecast-caution";
 import { formatShortDate, trendLabelText } from "@/lib/dashboard/format";
 import type {
   ForecastViewMode,
@@ -33,7 +38,7 @@ import { cn } from "@/lib/utils";
 
 const OBSERVED_COLOR = "var(--chart-1)";
 const ENSEMBLE_COLOR = "var(--chart-2)";
-const NEURAL_COLOR = "var(--chart-3)";
+const NEURAL_COLOR = "var(--forecast-neural)";
 
 type ChartRow = {
   week: string;
@@ -48,6 +53,7 @@ function appendForecastRows(
   observed: ChartRow[],
   forecast: RegionForecast,
   field: "ensemble" | "neural",
+  options?: { softenBridgeFromPriorWeek?: boolean },
 ): ChartRow[] {
   const originWeek = forecast.forecast_origin_week;
   const originPoint = observed.find((p) => p.week === originWeek);
@@ -70,11 +76,29 @@ function appendForecastRows(
   });
 
   if (bridgeValue == null || rows.length === 0) {
-    return [...observed, ...rows];
+    return mergeForecastRows(observed, rows);
   }
 
-  const lastObserved = observed[observed.length - 1];
-  if (lastObserved?.week === originWeek) {
+  if (options?.softenBridgeFromPriorWeek && originPoint) {
+    const originIdx = observed.findIndex((p) => p.week === originWeek);
+    if (originIdx > 0) {
+      const prior = observed[originIdx - 1];
+      const priorBridge = prior.observed;
+      if (priorBridge != null) {
+        const patched = observed.map((p) => {
+          if (p.week !== prior.week) return p;
+          return {
+            ...p,
+            ensemble: field === "ensemble" ? priorBridge : p.ensemble,
+            neural: field === "neural" ? priorBridge : p.neural,
+          };
+        });
+        return mergeForecastRows(patched, rows);
+      }
+    }
+  }
+
+  if (originPoint) {
     const patched = observed.map((p) => {
       if (p.week !== originWeek) return p;
       return {
@@ -83,7 +107,7 @@ function appendForecastRows(
         neural: field === "neural" ? bridgeValue : p.neural,
       };
     });
-    return [...patched, ...rows];
+    return mergeForecastRows(patched, rows);
   }
 
   const bridge: ChartRow = {
@@ -94,7 +118,18 @@ function appendForecastRows(
     bandBase: bridgeValue,
     bandWidth: 0,
   };
-  return [...observed, bridge, ...rows];
+  return mergeForecastRows(observed, [bridge, ...rows]);
+}
+
+/** When a stale research forecast predates the latest observed week, clip history at origin. */
+function clipObservedAtOrigin(
+  observed: ChartRow[],
+  originWeek: string | undefined,
+): ChartRow[] {
+  if (!originWeek) return observed;
+  const latest = observed[observed.length - 1]?.week;
+  if (!latest || latest <= originWeek) return observed;
+  return observed.filter((p) => p.week <= originWeek);
 }
 
 function mergeForecastRows(base: ChartRow[], extra: ChartRow[]): ChartRow[] {
@@ -131,19 +166,30 @@ function buildChartData(
     }));
 
   let merged = observed;
+  const softenEnsembleBridge = shouldSoftenEnsembleBridge(
+    timeseries,
+    ensemble,
+    viewMode,
+  );
 
   if (viewMode === "ensemble" || viewMode === "both") {
     if (ensemble?.horizons.length) {
       merged = mergeForecastRows(
         merged,
-        appendForecastRows(observed, ensemble, "ensemble"),
+        appendForecastRows(observed, ensemble, "ensemble", {
+          softenBridgeFromPriorWeek: softenEnsembleBridge,
+        }),
       );
     }
   }
 
   if (viewMode === "neural_ode" || viewMode === "both") {
     if (neural?.horizons.length) {
-      const neuralRows = appendForecastRows(observed, neural, "neural");
+      const neuralObserved =
+        viewMode === "neural_ode"
+          ? clipObservedAtOrigin(observed, neural.forecast_origin_week)
+          : observed;
+      const neuralRows = appendForecastRows(neuralObserved, neural, "neural");
       if (viewMode === "both") {
         merged = mergeForecastRows(merged, neuralRows);
         // Keep ensemble band only in compare mode
@@ -171,7 +217,47 @@ function activeForecast(
   neural: RegionForecast | null,
 ): RegionForecast | null {
   if (viewMode === "neural_ode") return neural;
+  if (viewMode === "both") return null;
   return ensemble ?? neural;
+}
+
+function chartDescription(
+  viewMode: ForecastViewMode,
+  regionName: string,
+  ensemble: RegionForecast | null,
+  neural: RegionForecast | null,
+): string {
+  if (viewMode === "ensemble" && ensemble) {
+    return `Ensemble baseline for ${regionName} from the week of ${formatShortDate(ensemble.forecast_origin_week)}. Shaded band ≈ 80% interval from backtest errors.`;
+  }
+  if (viewMode === "neural_ode" && neural) {
+    return `Neural ODE learned trajectory for ${regionName} from the week of ${formatShortDate(neural.forecast_origin_week)}. Band uses holdout residual spread.`;
+  }
+  if (viewMode === "both") {
+    const ensOrigin = ensemble
+      ? formatShortDate(ensemble.forecast_origin_week)
+      : "—";
+    const neuralOrigin = neural
+      ? formatShortDate(neural.forecast_origin_week)
+      : "—";
+    const sameOrigin =
+      ensemble?.forecast_origin_week &&
+      ensemble.forecast_origin_week === neural?.forecast_origin_week;
+    const originNote = sameOrigin
+      ? `Both forecasts start from the week of ${ensOrigin}.`
+      : `Ensemble from ${ensOrigin}; Neural ODE research candidate from ${neuralOrigin}. Origins may differ because only the ensemble updates weekly.`;
+    return `Side-by-side comparison for ${regionName}. Dark orange dashed = ensemble; teal dashed = Neural ODE (research). ${originNote}`;
+  }
+  return `Short-horizon forecast for ${regionName}.`;
+}
+
+function legendLabel(
+  base: string,
+  forecast: RegionForecast | null,
+  showOrigin: boolean,
+): string {
+  if (!showOrigin || !forecast) return base;
+  return `${base} · from ${formatShortDate(forecast.forecast_origin_week)}`;
 }
 
 export function ForecastChart({
@@ -197,6 +283,8 @@ export function ForecastChart({
   const forecast = activeForecast(viewMode, ensembleForecast, neuralOdeForecast);
   const primaryHorizon = forecast?.horizons[0];
   const fourWeekHorizon = forecast?.horizons.find((h) => h.horizon_weeks === 4);
+  const ensemblePrimary = ensembleForecast?.horizons[0];
+  const neuralPrimary = neuralOdeForecast?.horizons[0];
 
   const hasEnsemble = Boolean(ensembleForecast?.horizons.length);
   const hasNeural = Boolean(neuralOdeForecast?.horizons.length);
@@ -205,12 +293,36 @@ export function ForecastChart({
     (viewMode === "neural_ode" && hasNeural) ||
     (viewMode === "both" && (hasEnsemble || hasNeural));
 
-  const description =
-    viewMode === "ensemble"
-      ? `Ensemble baseline for ${regionName} from the week of ${forecast ? formatShortDate(forecast.forecast_origin_week) : "—"}. Shaded band ≈ 80% interval from backtest errors.`
-      : viewMode === "neural_ode"
-        ? `Neural ODE learned trajectory for ${regionName} from ${forecast ? formatShortDate(forecast.forecast_origin_week) : "—"}. Band uses holdout residual spread.`
-        : `Side-by-side comparison for ${regionName}. Orange dashed = ensemble; green dashed = Neural ODE.`;
+  const description = chartDescription(
+    viewMode,
+    regionName,
+    ensembleForecast,
+    neuralOdeForecast,
+  );
+  const showOriginInLegend = viewMode === "both";
+  const latestObservedWeek = timeseries
+    .filter((d) => d.weighted_activity_index != null)
+    .at(-1)?.week_start;
+  const staleNeuralOrigin =
+    viewMode === "neural_ode" &&
+    neuralOdeForecast &&
+    latestObservedWeek &&
+    latestObservedWeek > neuralOdeForecast.forecast_origin_week;
+
+  const ensembleCaution =
+    (viewMode === "ensemble" || viewMode === "both") &&
+    detectEnsembleReboundCaution(timeseries, ensembleForecast);
+  const staleNeuralCaution =
+    (viewMode === "both" || viewMode === "neural_ode") &&
+    detectStaleNeuralOverlayCaution(
+      timeseries,
+      neuralOdeForecast,
+      ensembleForecast,
+    );
+  const showSoftenNote =
+    viewMode === "both" &&
+    Boolean(ensembleCaution) &&
+    shouldSoftenEnsembleBridge(timeseries, ensembleForecast, viewMode);
 
   if (!showChart) {
     return (
@@ -237,6 +349,16 @@ export function ForecastChart({
   }
 
   const originWeek = forecast?.forecast_origin_week;
+  const compareOrigins =
+    viewMode === "both"
+      ? [
+          ensembleForecast?.forecast_origin_week,
+          neuralOdeForecast?.forecast_origin_week,
+        ].filter((w): w is string => Boolean(w))
+      : originWeek
+        ? [originWeek]
+        : [];
+  const uniqueCompareOrigins = [...new Set(compareOrigins)];
 
   return (
     <Card className={cn("border-border/80 bg-card shadow-sm", className)}>
@@ -248,12 +370,21 @@ export function ForecastChart({
           </div>
           <CardDescription className="mt-1 max-w-2xl leading-relaxed">
             {description}
+            {staleNeuralOrigin && (
+              <>
+                {" "}
+                Observed history stops at the forecast origin (
+                {formatShortDate(neuralOdeForecast!.forecast_origin_week)}) so the
+                dashed line connects cleanly. Newer observed weeks are omitted in this
+                view.
+              </>
+            )}
           </CardDescription>
           <p className="mt-2 text-xs text-muted-foreground">
             Viewing: <strong className="text-foreground">{forecastModelOptions[viewMode].label}</strong>
           </p>
         </div>
-        {fourWeekHorizon && (
+        {viewMode !== "both" && fourWeekHorizon && (
           <TrendChip label={fourWeekHorizon.predicted_trend} />
         )}
       </CardHeader>
@@ -269,7 +400,7 @@ export function ForecastChart({
                 className="inline-block h-0.5 w-4 rounded border border-dashed"
                 style={{ borderColor: ENSEMBLE_COLOR }}
               />
-              Ensemble
+              {legendLabel("Ensemble", ensembleForecast, showOriginInLegend)}
             </span>
           )}
           {(viewMode === "neural_ode" || viewMode === "both") && hasNeural && (
@@ -278,7 +409,7 @@ export function ForecastChart({
                 className="inline-block h-0.5 w-4 rounded border border-dashed"
                 style={{ borderColor: NEURAL_COLOR }}
               />
-              Neural ODE
+              {legendLabel("Neural ODE", neuralOdeForecast, showOriginInLegend)}
             </span>
           )}
           {viewMode !== "both" && (
@@ -291,6 +422,30 @@ export function ForecastChart({
             </span>
           )}
         </div>
+
+        {(ensembleCaution || staleNeuralCaution || showSoftenNote) && (
+          <div className="mb-4 space-y-2" role="status">
+            {ensembleCaution && (
+              <div className="flex gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed text-amber-950 dark:text-amber-100">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
+                <p>{ensembleCaution.message}</p>
+              </div>
+            )}
+            {staleNeuralCaution && (
+              <div className="flex gap-2 rounded-lg border border-sky-500/25 bg-sky-500/10 px-3 py-2 text-xs leading-relaxed text-sky-950 dark:text-sky-100">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-600 dark:text-sky-400" aria-hidden />
+                <p>{staleNeuralCaution.message}</p>
+              </div>
+            )}
+            {showSoftenNote && (
+              <p className="text-[11px] text-muted-foreground">
+                In compare view, the ensemble dashed line starts from the week before the
+                sharp drop so the chart does not over-emphasize a V-shaped rebound at the
+                crash week.
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="h-[280px] w-full min-h-[200px]">
           <ResponsiveContainer width="100%" height="100%">
@@ -342,13 +497,14 @@ export function ForecastChart({
                   return row?.week ? formatShortDate(row.week) : "";
                 }}
               />
-              {originWeek && (
+              {uniqueCompareOrigins.map((week) => (
                 <ReferenceLine
-                  x={originWeek}
+                  key={week}
+                  x={week}
                   stroke="var(--border)"
                   strokeDasharray="4 4"
                 />
-              )}
+              ))}
               {viewMode !== "both" && (
                 <>
                   <Area
@@ -407,13 +563,37 @@ export function ForecastChart({
           </ResponsiveContainer>
         </div>
 
-        {primaryHorizon && (
-          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-            1-week outlook ({forecast?.model_name ?? "model"}):{" "}
-            {trendLabelText(primaryHorizon.predicted_trend)} · confidence{" "}
-            {primaryHorizon.confidence_label ?? "—"}. Surveillance context only — not
-            for clinical decisions.
-          </p>
+        {viewMode === "both" ? (
+          <div className="mt-3 space-y-1 text-xs leading-relaxed text-muted-foreground">
+            {ensemblePrimary && (
+              <p>
+                1-week ensemble (from{" "}
+                {formatShortDate(ensembleForecast!.forecast_origin_week)}):{" "}
+                {trendLabelText(ensemblePrimary.predicted_trend)} · confidence{" "}
+                {ensemblePrimary.confidence_label ?? "—"}.
+              </p>
+            )}
+            {neuralPrimary && (
+              <p>
+                1-week Neural ODE research (from{" "}
+                {formatShortDate(neuralOdeForecast!.forecast_origin_week)}):{" "}
+                {trendLabelText(neuralPrimary.predicted_trend)} · confidence{" "}
+                {neuralPrimary.confidence_label ?? "—"}.
+              </p>
+            )}
+            <p className="text-[11px] italic">
+              Surveillance context only, not for clinical decisions.
+            </p>
+          </div>
+        ) : (
+          primaryHorizon && (
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+              1-week outlook ({forecast?.model_name ?? "model"}):{" "}
+              {trendLabelText(primaryHorizon.predicted_trend)} · confidence{" "}
+              {primaryHorizon.confidence_label ?? "—"}. Surveillance context only, not
+              for clinical decisions.
+            </p>
+          )
         )}
       </CardContent>
     </Card>

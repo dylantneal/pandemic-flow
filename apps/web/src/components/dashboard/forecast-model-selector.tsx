@@ -58,7 +58,7 @@ export function ForecastModelSelector({
               </span>
               <span className="text-xs leading-relaxed text-muted-foreground">
                 {disabled
-                  ? "No production Neural ODE yet — ensemble remains the trusted forecast."
+                  ? "No production Neural ODE yet. The ensemble remains the trusted forecast."
                   : meta.description}
               </span>
             </button>

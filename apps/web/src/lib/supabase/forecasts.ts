@@ -1,4 +1,10 @@
+import { unstable_cache } from "next/cache";
+
 import { createServerClient } from "@/lib/supabase/server";
+import {
+  CACHE_TAGS,
+  REVALIDATE_FORECASTS_SECONDS,
+} from "@/lib/supabase/cache-config";
 import type {
   BaselineHorizonMetric,
   BaselinePerformanceRow,
@@ -11,6 +17,9 @@ import type {
 } from "@/lib/dashboard/types";
 
 const ENSEMBLE_MODEL_NAME = "ensemble_v1";
+
+/** Frozen canonical research candidate surfaced in the dashboard compare view. */
+const CANONICAL_NEURAL_ODE_VERSION = "1.7.5-shrinkage-conservative";
 
 const PREDICTION_COLUMNS =
   "id, model_run_id, entity_type, entity_id, forecast_origin_week, target_date, horizon_weeks, predicted_activity_index, lower_bound, upper_bound, predicted_trend, confidence_label";
@@ -207,20 +216,69 @@ export async function getProductionNeuralOdeRun(
   return (data as ModelRunRow | null) ?? null;
 }
 
-export async function getNeuralOdeDerivativeSeries(
+/** Frozen canonical research candidate for a region (1.7.5), regardless of status. */
+export async function getNeuralOdeResearchRun(
+  regionId: string,
+): Promise<ModelRunRow | null> {
+  const modelName = neuralOdeModelName(regionId);
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("model_runs")
+    .select(MODEL_RUN_COLUMNS)
+    .eq("model_name", modelName)
+    .eq("version", CANONICAL_NEURAL_ODE_VERSION)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("getNeuralOdeResearchRun:", error.message);
+    return null;
+  }
+  return (data as ModelRunRow | null) ?? null;
+}
+
+/** Latest stored forecast for a specific model run id (avoids model_name collisions). */
+async function getLatestRegionForecastForRun(
   regionType: string,
   regionId: string,
+  modelRun: ModelRunRow,
+): Promise<RegionForecast | null> {
+  const originWeek = await getLatestOriginWeek(regionType, regionId, modelRun.id);
+  if (!originWeek) return null;
+
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("predictions")
+    .select(PREDICTION_COLUMNS)
+    .eq("entity_type", regionType)
+    .eq("entity_id", regionId)
+    .eq("model_run_id", modelRun.id)
+    .eq("forecast_origin_week", originWeek)
+    .order("horizon_weeks", { ascending: true });
+
+  if (error) {
+    console.error("getLatestRegionForecastForRun:", error.message);
+    return null;
+  }
+
+  const rows = (data ?? []) as PredictionRow[];
+  if (rows.length === 0) return null;
+
+  return {
+    forecast_origin_week: originWeek,
+    model_name: modelRun.model_name,
+    model_type: modelRun.model_type,
+    horizons: mapHorizons(rows),
+  };
+}
+
+/** Build the instantaneous rate-of-change series for a run's stored forecast. */
+async function buildNeuralOdeDerivatives(
+  regionType: string,
+  regionId: string,
+  modelRun: ModelRunRow,
+  forecast: RegionForecast,
 ): Promise<DerivativeSeries | null> {
-  const modelRun = await getProductionNeuralOdeRun(regionId);
-  if (!modelRun) return null;
-
-  const forecast = await getLatestRegionForecast(
-    regionType,
-    regionId,
-    modelRun.model_name,
-  );
-  if (!forecast) return null;
-
   const supabase = createServerClient();
   const { data: preds, error: predErr } = await supabase
     .from("predictions")
@@ -231,7 +289,7 @@ export async function getNeuralOdeDerivativeSeries(
     .eq("forecast_origin_week", forecast.forecast_origin_week);
 
   if (predErr || !preds?.length) {
-    console.error("getNeuralOdeDerivativeSeries predictions:", predErr?.message);
+    if (predErr) console.error("buildNeuralOdeDerivatives predictions:", predErr.message);
     return null;
   }
 
@@ -306,6 +364,52 @@ export async function getNeuralOdePerformance(): Promise<NeuralOdePerformanceRow
     .filter((r) => r.horizons.length > 0 || r.total_evaluations > 0);
 }
 
+async function fetchRegionForecastsBundle(
+  regionType: string,
+  regionId: string,
+): Promise<{
+  ensemble: RegionForecast | null;
+  neuralOde: RegionForecast | null;
+  derivatives: DerivativeSeries | null;
+  neuralOdeAvailable: boolean;
+  neuralOdeIsResearch: boolean;
+  neuralOdeVersion: string | null;
+}> {
+  const [ensemble, productionRun] = await Promise.all([
+    getLatestRegionForecast(regionType, regionId, ENSEMBLE_MODEL_NAME),
+    getProductionNeuralOdeRun(regionId),
+  ]);
+
+  // Prefer a promoted production model; otherwise fall back to the frozen
+  // canonical research candidate so the compare view has something to show.
+  const neuralRun = productionRun ?? (await getNeuralOdeResearchRun(regionId));
+  const isResearch = !productionRun && Boolean(neuralRun);
+
+  let neuralOde: RegionForecast | null = null;
+  let derivatives: DerivativeSeries | null = null;
+
+  if (neuralRun) {
+    neuralOde = await getLatestRegionForecastForRun(regionType, regionId, neuralRun);
+    if (neuralOde) {
+      derivatives = await buildNeuralOdeDerivatives(
+        regionType,
+        regionId,
+        neuralRun,
+        neuralOde,
+      );
+    }
+  }
+
+  return {
+    ensemble,
+    neuralOde,
+    derivatives,
+    neuralOdeAvailable: Boolean(neuralOde),
+    neuralOdeIsResearch: isResearch && Boolean(neuralOde),
+    neuralOdeVersion: neuralOde ? neuralRun?.version ?? null : null,
+  };
+}
+
 export async function getRegionForecastsBundle(
   regionType: string,
   regionId: string,
@@ -314,30 +418,17 @@ export async function getRegionForecastsBundle(
   neuralOde: RegionForecast | null;
   derivatives: DerivativeSeries | null;
   neuralOdeAvailable: boolean;
+  neuralOdeIsResearch: boolean;
+  neuralOdeVersion: string | null;
 }> {
-  const [ensemble, neuralRun] = await Promise.all([
-    getLatestRegionForecast(regionType, regionId, ENSEMBLE_MODEL_NAME),
-    getProductionNeuralOdeRun(regionId),
-  ]);
-
-  let neuralOde: RegionForecast | null = null;
-  let derivatives = null;
-
-  if (neuralRun) {
-    neuralOde = await getLatestRegionForecast(
-      regionType,
-      regionId,
-      neuralRun.model_name,
-    );
-    derivatives = await getNeuralOdeDerivativeSeries(regionType, regionId);
-  }
-
-  return {
-    ensemble,
-    neuralOde,
-    derivatives,
-    neuralOdeAvailable: Boolean(neuralRun),
-  };
+  return unstable_cache(
+    fetchRegionForecastsBundle,
+    ["region-forecasts-bundle", regionType, regionId],
+    {
+      revalidate: REVALIDATE_FORECASTS_SECONDS,
+      tags: [CACHE_TAGS.forecasts],
+    },
+  )(regionType, regionId);
 }
 
 export { ENSEMBLE_MODEL_NAME };

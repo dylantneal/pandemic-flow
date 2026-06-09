@@ -38,6 +38,7 @@ from scripts.lib.sites_refresh import refresh_sites  # noqa: E402
 from scripts.lib.forecast_eval import evaluate_forecasts  # noqa: E402
 from scripts.lib.forecast_runner import generate_forecasts  # noqa: E402
 from scripts.lib.neural_ode.infer_runner import infer_neural_ode  # noqa: E402
+from scripts.lib.neural_ode.versions import CANONICAL_RESEARCH_VERSION  # noqa: E402
 from scripts.lib.weekly_metrics_build import build_weekly_metrics  # noqa: E402
 
 logger = logging.getLogger(__name__)
@@ -99,7 +100,18 @@ def run_weekly_pipeline(config: IngestionConfig | None = None) -> int:
         return generate_forecasts(cfg, backfill_weeks=0)
 
     def _infer_neural_ode(cfg: IngestionConfig) -> int:
-        return infer_neural_ode(cfg, backfill_weeks=0)
+        code = infer_neural_ode(cfg, backfill_weeks=0)
+        if code != 0:
+            return code
+        logger.info(
+            "Refreshing canonical research Neural ODE (v%s)",
+            CANONICAL_RESEARCH_VERSION,
+        )
+        return infer_neural_ode(
+            cfg,
+            backfill_weeks=0,
+            version=CANONICAL_RESEARCH_VERSION,
+        )
 
     steps: list[tuple[str, StepFn]] = [
         ("ingest_cdc", ingest_cdc),

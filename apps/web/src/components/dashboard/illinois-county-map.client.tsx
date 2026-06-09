@@ -309,7 +309,7 @@ export function IllinoisCountyMapClient({
         role="group"
       >
         <title id="il-map-title" suppressHydrationWarning>
-          {`Illinois counties — wastewater activity index${weekStart ? `, week of ${formatWeekDate(weekStart)}` : ""}`}
+          {`Illinois counties, wastewater activity index${weekStart ? `, week of ${formatWeekDate(weekStart)}` : ""}`}
         </title>
         <defs>
           <pattern

@@ -144,7 +144,7 @@ export function NeuralOdeRunCards({ runs }: { runs: ModelRunRow[] }) {
                 {run.status === "production"
                   ? "This run powers region dashboard Neural ODE views and weekly inference."
                   : prodStatus === "near_miss"
-                    ? "Safe on short horizons and intervals, but 4-week MAE is slightly above the ensemble slack — research candidate only."
+                    ? "Safe on short horizons and intervals, but 4-week MAE is slightly above the ensemble slack. This remains a research candidate only."
                     : "Candidate runs remain off production dashboards until promotion passes baseline, calibration, and regime gates."}
               </p>
             </CardContent>

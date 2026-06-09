@@ -13,7 +13,12 @@ import {
   AccentCardHeader,
   AccentCardTitle,
 } from "@/components/dashboard/accent-card";
-import { homePlainTerms, regionalDashboardsIntro, siteName } from "@/lib/copy/site-copy";
+import {
+  homePlainTerms,
+  regionalDashboardsIntro,
+  siteName,
+} from "@/lib/copy/site-copy";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 import {
   formatActivityIndex,
   formatPercentChange,
@@ -21,7 +26,15 @@ import {
 } from "@/lib/dashboard/format";
 import { getLatestRegionMetric } from "@/lib/supabase/metrics";
 
-export const dynamic = "force-dynamic";
+/** See REVALIDATE_WEEKLY_SECONDS in lib/supabase/cache-config.ts */
+export const revalidate = 3600;
+
+export const metadata = buildPageMetadata({
+  title: "Overview",
+  description:
+    "Weekly COVID wastewater activity for Illinois and Cook County. Community trends, data quality, and forecasts from CDC NWSS.",
+  path: "/",
+});
 
 export default async function HomePage() {
   const [illinois, cook] = await Promise.all([

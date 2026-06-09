@@ -4,6 +4,11 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
+import { MetricHelp } from "@/components/dashboard/metric-help";
+import {
+  activityIndexHint,
+  metricHelp,
+} from "@/lib/copy/site-copy";
 import {
   formatActivityIndex,
   formatPercentChange,
@@ -29,13 +34,15 @@ export function SummaryCards({
     label: string;
     value: string;
     hint?: string;
+    help?: { title: string; body: string };
     accent?: boolean;
     showWow?: boolean;
   }> = [
     {
       label: "Activity index",
       value: formatActivityIndex(activity),
-      hint: "Compared to each sewershed's own history (0 = typical week)",
+      hint: activityIndexHint,
+      help: metricHelp.activityIndex,
       accent: true,
       showWow: true,
     },
@@ -46,11 +53,13 @@ export function SummaryCards({
         totalSites > 0
           ? `${reporting ?? "—"} of ${totalSites} registered sewersheds · ${formatPopulation(latest?.population_represented)} population represented`
           : "Sewershed count unavailable",
+      help: metricHelp.sitesReporting,
     },
     {
       label: "Data quality",
       value: formatQualityScore(latest?.quality_score),
       hint: "Latest week composite score. See quality panel for flags.",
+      help: metricHelp.qualityScore,
     },
   ];
 
@@ -59,8 +68,11 @@ export function SummaryCards({
       {cards.map((card) => (
         <Card key={card.label} className="border-border/80 bg-card shadow-sm">
           <CardHeader className="pb-2">
-            <CardDescription className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            <CardDescription className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               {card.label}
+              {card.help ? (
+                <MetricHelp title={card.help.title} body={card.help.body} />
+              ) : null}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -74,11 +86,17 @@ export function SummaryCards({
               {card.value}
             </p>
             {card.showWow && latest?.week_over_week_change != null ? (
-              <p className="text-sm text-muted-foreground">
-                Week-over-week{" "}
-                <span className="font-medium text-foreground">
-                  {formatPercentChange(latest.week_over_week_change)}
+              <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <span>
+                  Week-over-week{" "}
+                  <span className="font-medium text-foreground">
+                    {formatPercentChange(latest.week_over_week_change)}
+                  </span>
                 </span>
+                <MetricHelp
+                  title={metricHelp.weekOverWeek.title}
+                  body={metricHelp.weekOverWeek.body}
+                />
               </p>
             ) : null}
             {card.hint ? (

@@ -21,7 +21,7 @@ export function NeuralOdeExplainer() {
           Instead of a fixed rule like “next week equals this week,” we fit a small
           neural network that describes <strong className="text-foreground">how fast</strong>{" "}
           activity changes at any moment along a trajectory. The model then integrates
-          that law forward in time — similar in spirit to how physics simulates motion,
+          that law forward in time, similar in spirit to how physics simulates motion,
           but learned from wastewater history.
         </p>
       </section>
@@ -100,7 +100,7 @@ export function NeuralOdeExplainer() {
       <section className="rounded-xl border border-dashed border-border bg-card/50 px-5 py-4 text-sm leading-relaxed text-muted-foreground">
         <strong className="text-foreground">On region dashboards:</strong> use the
         forecast model selector to view ensemble baseline, Neural ODE, or both. The
-        rate-of-change chart appears when Neural ODE is selected — it shows the model’s
+        rate-of-change chart appears when Neural ODE is selected. It shows the model’s
         estimated derivative (dx/dt), not a separate laboratory measurement.
       </section>
     </div>

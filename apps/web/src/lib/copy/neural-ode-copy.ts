@@ -5,7 +5,7 @@ export const neuralOdeIntro = {
   subtitle:
     "A small neural network learns how wastewater activity tends to change week to week, then projects that pattern a few weeks ahead.",
   disclaimer:
-    "Forecasts describe a wastewater activity index — not confirmed COVID case counts. Neural ODE outputs are experimental until they pass promotion gates; the ensemble baseline remains the trusted production forecast.",
+    "Forecasts describe a wastewater activity index, not confirmed COVID case counts. Neural ODE outputs are experimental until they pass promotion gates; the ensemble baseline remains the trusted production forecast.",
   productionNote:
     "The ensemble baseline is the default production forecast. Neural ODE appears here only after manual promotion to production status.",
 };
@@ -14,7 +14,7 @@ export const neuralOdeHowItWorks = [
   {
     step: "01",
     title: "Observe the signal",
-    body: "We use the same weekly weighted activity index as the rest of COVID Flow — a normalized measure of viral RNA in community wastewater.",
+    body: "We use the same weekly weighted activity index as the rest of COVID Flow, a normalized measure of viral RNA in community wastewater.",
   },
   {
     step: "02",
@@ -30,7 +30,7 @@ export const neuralOdeHowItWorks = [
 
 export const derivativeExplainer = {
   title: "Rate of change (learned dynamics)",
-  lead: "This chart shows the model’s estimated speed of change in activity index units per week — not a measured lab value.",
+  lead: "This chart shows the model’s estimated speed of change in activity index units per week, not a measured lab value.",
   bullets: [
     "Above zero (shaded warm): the model thinks activity is rising at that moment along the forecast path.",
     "Below zero: the model thinks activity is falling.",
@@ -52,7 +52,7 @@ export const forecastModelOptions = {
     label: "Learned dynamics (research)",
     short: "Research",
     description:
-      "Research layer only — not the production forecast. Shown on dashboards only after explicit promotion; default is ensemble.",
+      "Research layer only, not the production forecast. Shown on dashboards only after explicit promotion; default is ensemble.",
   },
   both: {
     label: "Compare both",
@@ -82,25 +82,25 @@ export const modelLabNeuralOde = {
     title: "Where modeling goes next",
     lead: "The next product step is honest communication in Model Lab, not more aggressive 4-week Neural ODE tuning.",
     items: [
-      "Short-horizon selective correction (h1/h2) with richer wastewater context — site quality, coverage, regime labels.",
+      "Short-horizon selective correction (h1/h2) with richer wastewater context, including site quality, coverage, and regime labels.",
       "Better data and evaluation hygiene before new architectures.",
-      "Optional one-shot h4-abstention experiment (1.7.6) — if it cannot clear the narrow 4w gap without hurting h1/h2, stop forcing h4 and treat week-4 as ensemble territory.",
+      "Optional one-shot h4-abstention experiment (1.7.6). If it cannot clear the narrow 4w gap without hurting h1/h2, stop forcing h4 and treat week-4 as ensemble territory.",
     ],
   },
   dashboardNote: {
     title: "On Illinois and Cook dashboards",
     body:
-      "The default forecast is always the ensemble baseline. Neural ODE overlays appear only after an explicit manual promotion — which we do not plan for the frozen v1.7.5 research reference.",
+      "The default forecast is always the ensemble baseline. Neural ODE overlays appear only after an explicit manual promotion, which we do not plan for the frozen v1.7.5 research reference.",
   },
   researchConclusion: {
     title: "Research conclusion (v1.7.5)",
     plainSummary:
-      "The model can sometimes help, knows when to mostly stay quiet, and produces calibrated uncertainty. At four weeks, simple ensemble baselines are still hard to beat — so COVID Flow keeps the ensemble on production dashboards.",
+      "The model can sometimes help, knows when to mostly stay quiet, and produces calibrated uncertainty. At four weeks, simple ensemble baselines are still hard to beat, so COVID Flow keeps the ensemble on production dashboards.",
     works: [
       "H1 is protected and competitive with persistence.",
       "Correction gates work: h2 and h4 mostly abstain instead of inventing dynamics.",
       "80% intervals land near ~79% empirical coverage after recalibration.",
-      "Beats ensemble on many origins — especially at 2 weeks (IL ~59–79% improved by slice; Cook ~71%).",
+      "Beats ensemble on many origins, especially at 2 weeks (IL ~59–79% improved by slice; Cook ~71%).",
     ],
     notProduction: [
       "4-week MAE is just above the promotion slack vs ensemble: IL 0.773 vs allowed 0.746; Cook 0.739 vs allowed 0.722.",
@@ -108,7 +108,7 @@ export const modelLabNeuralOde = {
       "Short/medium-horizon signal is scientifically interesting; reliable 4-week dynamics are not.",
     ],
     framing:
-      "Frame Neural ODE as constrained dynamics learning under noisy weekly wastewater data — a positive research result, not a failed product bet.",
+      "Frame Neural ODE as constrained dynamics learning under noisy weekly wastewater data: a positive research result, not a failed product bet.",
   },
   researchBanner:
     "The ensemble remains the trusted production forecast. v1.7.5 is the frozen canonical research candidate: safe, interpretable, and near-miss on 4-week lift only.",
@@ -117,7 +117,7 @@ export const modelLabNeuralOde = {
     profile: "shrinkage_correction_v2",
     title: "Canonical research candidate (v1.7.5, frozen)",
     bullets: [
-      "Not broken: bounded h1, shrinkage gates, ~79% interval coverage — interpretable end-to-end behavior.",
+      "Not broken: bounded h1, shrinkage gates, and ~79% interval coverage with interpretable end-to-end behavior.",
       "Not a production replacement: 4w MAE narrowly misses ensemble×1.05 (IL +3.6%, Cook +2.4% above slack on holdout).",
       "Scientifically interesting at h2: large share of origins beat ensemble when the gate allows a correction.",
       "Frozen reference run; optional 1.7.6 only tests stronger h4 abstention.",
@@ -132,11 +132,11 @@ export const modelLabNeuralOde = {
   },
   promotionTiersTitle: "Promotion tiers",
   promotionTiers: [
-    "Production safe — all held-out production checks pass (manual promote only).",
-    "Near miss — model is safe on h1, intervals, and regimes, but 4w MAE is slightly above ensemble×1.05 (not enough long-horizon lift).",
-    "Not production safe — fails persistence, interval, regime, or multi-horizon checks (legacy v1.6-style behavior).",
-    "Research value — selective correction beats ensemble on enough origins at h2 with conservative gates (separate from production).",
-    "h4 abstention (research) — when only h4 improvement fails but gates are conservative, that is expected abstention, not a broken model.",
+    "Production safe: all held-out production checks pass (manual promote only).",
+    "Near miss: model is safe on h1, intervals, and regimes, but 4w MAE is slightly above ensemble×1.05 (not enough long-horizon lift).",
+    "Not production safe: fails persistence, interval, regime, or multi-horizon checks (legacy v1.6-style behavior).",
+    "Research value: selective correction beats ensemble on enough origins at h2 with conservative gates (separate from production).",
+    "h4 abstention (research): when only h4 improvement fails but gates are conservative, that is expected abstention, not a broken model.",
   ],
   targetClarification:
     "All models here predict a weekly wastewater activity index derived from NWSS surveillance. They do not directly forecast confirmed COVID cases, hospitalizations, or deaths.",

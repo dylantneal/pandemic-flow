@@ -78,7 +78,7 @@ export function NeuralOdeResearchBanner({ runs }: { runs: ModelRunRow[] }) {
           />
           <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
             <p className="font-medium text-foreground">
-              Research track — not a case-count predictor
+              Research track: not a case-count predictor
             </p>
             <p>{modelLabNeuralOde.targetClarification}</p>
             {!hasProduction && (

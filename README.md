@@ -124,7 +124,7 @@ npm run promote:neural-ode:check -- --all-candidates
 npm run infer:neural-ode:backfill
 ```
 
-Region dashboards default to **ensemble** forecasts. Neural ODE is a **research track** (canonical candidate `1.7.5-shrinkage-conservative`): safe selective correction and calibrated intervals, but **not** a production ensemble replacement — 4-week lift on holdout is narrowly below the promotion bar. Model Lab → `/model-lab/neural-ode`. See [`docs/PHASE7.md`](docs/PHASE7.md#research-conclusion-v175-frozen).
+Region dashboards default to **ensemble** forecasts. Neural ODE is a **research track** (canonical candidate `1.7.5-shrinkage-conservative`): safe selective correction and calibrated intervals, but **not** a production ensemble replacement — 4-week lift on holdout is narrowly below the promotion bar. Model Lab → `/model-lab/neural-ode`. See [`docs/NEURAL_ODE_EXPLAINED.md`](docs/NEURAL_ODE_EXPLAINED.md) for a full walkthrough, and [`docs/PHASE7.md`](docs/PHASE7.md#research-conclusion-v175-frozen) for operator commands and promotion gates.
 
 **GitHub Actions** runs this automatically every **Saturday ~13:30 UTC** via [`.github/workflows/weekly-data-update.yml`](.github/workflows/weekly-data-update.yml). You can also trigger it manually from the Actions tab (`workflow_dispatch`).
 
@@ -142,7 +142,7 @@ See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for setup details.
 
 ## Documentation
 
-Research and architecture documents live in [`docs/`](docs/). For database tables, pipeline layers, and modeling data, see [`docs/DATA.md`](docs/DATA.md). For Phase 6 baseline forecasting (models, pipeline, UI), see [`docs/PHASE6.md`](docs/PHASE6.md). For Phase 7 Neural ODE (operations and UI), see [`docs/PHASE7.md`](docs/PHASE7.md). For design and schema, see [`docs/PHASE7_DESIGN.md`](docs/PHASE7_DESIGN.md).
+Research and architecture documents live in [`docs/`](docs/). For database tables, pipeline layers, and modeling data, see [`docs/DATA.md`](docs/DATA.md). For Phase 6 baseline forecasting (models, pipeline, UI), see [`docs/PHASE6.md`](docs/PHASE6.md). For how the Neural ODE works, see [`docs/NEURAL_ODE_EXPLAINED.md`](docs/NEURAL_ODE_EXPLAINED.md). For Phase 7 operations and promotion gates, see [`docs/PHASE7.md`](docs/PHASE7.md). For design and schema, see [`docs/PHASE7_DESIGN.md`](docs/PHASE7_DESIGN.md).
 
 ## License
 

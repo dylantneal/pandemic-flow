@@ -100,6 +100,20 @@ export const methodsSections = [
   },
 ] as const;
 
+export const methodsForecastsSection = {
+  id: "forecasts",
+  number: "05",
+  title: "Forecasts and model evaluation",
+  body: "Region dashboards include short-horizon projections with uncertainty bands. The production forecast is an ensemble baseline trained on historical weekly indices. It tracks wastewater activity, not confirmed case counts or hospital burden.",
+  detail:
+    "For holdout accuracy tables, baseline comparisons, and documentation of the experimental Neural ODE research layer, see the model evaluation pages linked below.",
+  baselineLinkLabel: "Baseline forecast evaluation",
+  baselineLinkDescription: "Ensemble benchmarks, MAE tables, and model run history",
+  neuralOdeLinkLabel: "Learned dynamics (research)",
+  neuralOdeLinkDescription:
+    "Neural ODE experiments, promotion criteria, and why research models stay off production dashboards",
+} as const;
+
 export const methodsPullQuote =
   "The activity index compares this week to each sewershed's own history. It describes relative change in viral RNA, not how many people are infected.";
 
@@ -136,3 +150,38 @@ export const illinoisMapIntro =
 
 export const cookCountyDescription =
   "Cook County and Chicago-area sewersheds. A metro-focused view of community viral shedding in wastewater.";
+
+/** Canonical metric definitions used across dashboards and help tooltips. */
+export const metricHelp = {
+  activityIndex: {
+    title: "Activity index",
+    body: "Compares this week's viral RNA level to each sewershed's own historical baseline. Near zero means a typical week for that location. The index describes relative community shedding, not case counts or personal risk.",
+  },
+  weekOverWeek: {
+    title: "Week-over-week change",
+    body: "Percent change in the activity index from the prior reporting week. Trend labels (rising, falling, stable) apply only when enough samples meet quality thresholds.",
+  },
+  qualityScore: {
+    title: "Data quality score",
+    body: "Composite score for the latest week based on sample completeness, lab flags, and reporting coverage. Lower scores mean more caution when interpreting trends. See the quality panel for specific flags.",
+  },
+  sitesReporting: {
+    title: "Sites reporting",
+    body: "Number of wastewater monitoring locations with data for the latest NWSS reporting week in this region.",
+  },
+} as const;
+
+export const qualityPanelDescription =
+  "How complete and reliable the underlying wastewater samples are for the latest reporting week. Lower scores mean more caution when interpreting trends.";
+
+export const qualityPanelFooter =
+  "Wastewater monitoring reflects community shedding, not individual diagnoses. Gaps in sampling, lab methods, or sewershed coverage can shift the index without a true epidemic change.";
+
+export const qualityPanelNoFlags =
+  "No quality flags for the latest week. Reporting looks routine.";
+
+export const activityIndexHint =
+  "Compared to each sewershed's own history (0 = typical week)";
+
+export const dataProvenanceDescription =
+  "Metrics are rebuilt each week from CDC NWSS open data. We harmonize sewershed identifiers, apply Illinois cleaning rules, and roll samples up to site and region level.";

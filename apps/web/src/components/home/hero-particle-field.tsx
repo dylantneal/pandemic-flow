@@ -412,12 +412,23 @@ function disposeThreeScene(bundle: ThreeSceneBundle | null) {
   bundle.renderer.dispose();
 }
 
+function shouldUseStaticGraphics() {
+  const coarse = window.matchMedia("(pointer: coarse)").matches;
+  const narrow = window.innerWidth < 768;
+  const cores = navigator.hardwareConcurrency ?? 8;
+  const connection = (
+    navigator as Navigator & { connection?: { saveData?: boolean } }
+  ).connection;
+
+  return coarse || narrow || cores <= 4 || Boolean(connection?.saveData);
+}
+
 export function HeroParticleField({
   variant = "home",
 }: {
   variant?: keyof typeof PRESETS;
 }) {
-  const [reduceMotion, setReduceMotion] = useState(false);
+  const [useStaticFallback, setUseStaticFallback] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const simRef = useRef<SimParticle[]>([]);
@@ -427,14 +438,16 @@ export function HeroParticleField({
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setReduceMotion(mq.matches);
+    const update = () => {
+      setUseStaticFallback(mq.matches || shouldUseStaticGraphics());
+    };
     update();
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
   }, []);
 
   useLayoutEffect(() => {
-    if (reduceMotion) return;
+    if (useStaticFallback) return;
 
     const container = containerRef.current;
     const canvas = canvasRef.current;
@@ -532,9 +545,9 @@ export function HeroParticleField({
       threeRef.current = null;
       simRef.current = [];
     };
-  }, [preset, reduceMotion]);
+  }, [preset, useStaticFallback]);
 
-  if (reduceMotion) {
+  if (useStaticFallback) {
     return (
       <div
         aria-hidden

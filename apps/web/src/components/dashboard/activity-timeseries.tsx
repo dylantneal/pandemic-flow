@@ -85,7 +85,11 @@ export function ActivityTimeseries({
             elevated viral RNA relative to the regional baseline.
           </CardDescription>
         </div>
-        <div className="flex gap-1 rounded-lg border border-border/80 bg-muted/40 p-1">
+        <div
+          role="group"
+          aria-label="Chart time range"
+          className="flex gap-1 rounded-lg border border-border/80 bg-muted/40 p-1"
+        >
           {(
             [
               ["12", "12 wk"],
@@ -99,6 +103,7 @@ export function ActivityTimeseries({
               size="sm"
               variant={range === key ? "default" : "ghost"}
               className="h-7 px-2.5 text-xs"
+              aria-pressed={range === key}
               onClick={() => setRange(key)}
             >
               {label}

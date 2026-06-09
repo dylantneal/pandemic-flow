@@ -5,18 +5,21 @@ import { ModelLabNav } from "@/components/model-lab/model-lab-nav";
 import { BaselineMetricsTable } from "@/components/model-lab/baseline-metrics-table";
 import { HorizonErrorChart } from "@/components/model-lab/horizon-error-chart";
 import { ModelRunCards } from "@/components/model-lab/model-run-cards";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 import {
   getAllModelRuns,
   getBaselinePerformance,
 } from "@/lib/supabase/forecasts";
 
-export const dynamic = "force-dynamic";
+/** See REVALIDATE_FORECASTS_SECONDS in lib/supabase/cache-config.ts */
+export const revalidate = 21600;
 
-export const metadata = {
+export const metadata = buildPageMetadata({
   title: "Model Lab",
   description:
     "Baseline forecast performance and model run tracking for COVID Flow wastewater dynamics.",
-};
+  path: "/model-lab",
+});
 
 export default async function ModelLabPage() {
   const [runs, performance] = await Promise.all([
@@ -47,10 +50,37 @@ export default async function ModelLabPage() {
             >
               learned dynamics research layer
             </Link>{" "}
-            — calibrated and useful at short horizons, not promoted at 4 weeks.
+            and it is calibrated and useful at short horizons, but not promoted at 4
+            weeks.
           </p>
           </div>
         </header>
+
+        <section className="rounded-xl border border-border/70 bg-muted/20 p-5 text-sm leading-relaxed text-muted-foreground sm:p-6">
+          <h2 className="mb-2 text-base font-semibold text-foreground">
+            What this page is
+          </h2>
+          <p className="max-w-3xl">
+            A behind-the-scenes look at the forecasting models and how accurate they
+            are. The <strong className="text-foreground">ensemble baseline</strong>{" "}
+            powers the public dashboards. The{" "}
+            <Link
+              href="/model-lab/neural-ode"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Neural ODE
+            </Link>{" "}
+            is a research experiment that is not used on the dashboards. If you just
+            want the current situation, the{" "}
+            <Link
+              href="/illinois"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              region dashboards
+            </Link>{" "}
+            are the place to start.
+          </p>
+        </section>
 
         <section className="space-y-4" aria-labelledby="runs-heading">
           <h2 id="runs-heading" className="text-lg font-semibold tracking-tight">
@@ -74,7 +104,7 @@ export default async function ModelLabPage() {
           </h2>
           <ul className="list-disc space-y-2 pl-5">
             <li>
-              <strong>Persistence</strong> assumes next week equals this week — often
+              <strong>Persistence</strong> assumes next week equals this week, which is often
               hard to beat at 1-week horizon.
             </li>
             <li>

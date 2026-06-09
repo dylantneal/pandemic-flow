@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <radialGradient id="body" cx="42%" cy="38%" r="68%">
+      <stop offset="0%" stop-color="#fb9a4f" />
+      <stop offset="48%" stop-color="#ea6a2e" />
+      <stop offset="100%" stop-color="#9a3a10" />
+    </radialGradient>
+    <radialGradient id="knob" cx="40%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#f6904a" />
+      <stop offset="100%" stop-color="#c2510f" />
+    </radialGradient>
+    <g id="spike">
+      <line x1="32" y1="21" x2="32" y2="9.5" stroke="#bd4a12" stroke-width="3.1" stroke-linecap="round" />
+      <circle cx="32" cy="7" r="3.7" fill="url(#knob)" />
+    </g>
+  </defs>
+
+  <g>
+    <use href="#spike" />
+    <use href="#spike" transform="rotate(30 32 32)" />
+    <use href="#spike" transform="rotate(60 32 32)" />
+    <use href="#spike" transform="rotate(90 32 32)" />
+    <use href="#spike" transform="rotate(120 32 32)" />
+    <use href="#spike" transform="rotate(150 32 32)" />
+    <use href="#spike" transform="rotate(180 32 32)" />
+    <use href="#spike" transform="rotate(210 32 32)" />
+    <use href="#spike" transform="rotate(240 32 32)" />
+    <use href="#spike" transform="rotate(270 32 32)" />
+    <use href="#spike" transform="rotate(300 32 32)" />
+    <use href="#spike" transform="rotate(330 32 32)" />
+  </g>
+
+  <circle cx="32" cy="32" r="13.5" fill="url(#body)" />
+
+  <circle cx="26.5" cy="27" r="2.3" fill="#fcb375" opacity="0.85" />
+  <circle cx="35.5" cy="33.5" r="1.9" fill="#fcb375" opacity="0.7" />
+  <circle cx="30" cy="36" r="1.5" fill="#fcb375" opacity="0.6" />
+</svg>

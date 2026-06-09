@@ -1,4 +1,10 @@
+import { unstable_cache } from "next/cache";
+
 import { createServerClient } from "@/lib/supabase/server";
+import {
+  CACHE_TAGS,
+  REVALIDATE_WEEKLY_SECONDS,
+} from "@/lib/supabase/cache-config";
 import type {
   RegionMetricRow,
   SiteMetricRow,
@@ -12,12 +18,12 @@ const METRIC_COLUMNS =
   "id, region_type, region_id, region_name, week_start, site_count, active_site_count, population_represented, median_activity_index, weighted_activity_index, week_over_week_change, estimated_growth_rate, trend_label, quality_score, quality_flags, created_at";
 
 const TIMESERIES_COLUMNS =
-  "week_start, weighted_activity_index, median_activity_index, trend_label, active_site_count, quality_score";
+  "week_start, weighted_activity_index, median_activity_index, trend_label, active_site_count, quality_score, week_over_week_change";
 
 const SITE_METRIC_COLUMNS =
   "site_id, week_start, sample_count, activity_index, week_over_week_change, trend_label, quality_score, quality_flags, latest_sample_date";
 
-export async function getLatestRegionMetric(
+async function fetchLatestRegionMetric(
   regionType: string,
   regionId: string,
 ): Promise<RegionMetricRow | null> {
@@ -38,7 +44,28 @@ export async function getLatestRegionMetric(
   return data as RegionMetricRow | null;
 }
 
-export async function getRegionTimeseries(
+export async function getLatestRegionMetric(
+  regionType: string,
+  regionId: string,
+): Promise<RegionMetricRow | null> {
+  return unstable_cache(
+    fetchLatestRegionMetric,
+    ["latest-region-metric", regionType, regionId],
+    {
+      revalidate: REVALIDATE_WEEKLY_SECONDS,
+      tags: [CACHE_TAGS.weeklyMetrics],
+    },
+  )(regionType, regionId);
+}
+
+export async function getGlobalDataFreshness(): Promise<{
+  weekStart: string | null;
+}> {
+  const latest = await getLatestRegionMetric("state", "IL");
+  return { weekStart: latest?.week_start ?? null };
+}
+
+async function fetchRegionTimeseries(
   regionType: string,
   regionId: string,
   weeks?: number,
@@ -52,7 +79,7 @@ export async function getRegionTimeseries(
     .order("week_start", { ascending: true });
 
   if (weeks != null && weeks > 0) {
-    const latest = await getLatestRegionMetric(regionType, regionId);
+    const latest = await fetchLatestRegionMetric(regionType, regionId);
     if (latest?.week_start) {
       const start = new Date(`${latest.week_start}T12:00:00`);
       start.setDate(start.getDate() - weeks * 7);
@@ -66,6 +93,23 @@ export async function getRegionTimeseries(
     return [];
   }
   return (data ?? []) as TimeseriesPoint[];
+}
+
+export async function getRegionTimeseries(
+  regionType: string,
+  regionId: string,
+  weeks?: number,
+): Promise<TimeseriesPoint[]> {
+  const cacheKey =
+    weeks != null ? `region-timeseries-${weeks}` : "region-timeseries-all";
+  return unstable_cache(
+    fetchRegionTimeseries,
+    [cacheKey, regionType, regionId],
+    {
+      revalidate: REVALIDATE_WEEKLY_SECONDS,
+      tags: [CACHE_TAGS.weeklyMetrics],
+    },
+  )(regionType, regionId, weeks);
 }
 
 async function getCookSiteIds(): Promise<string[]> {
@@ -82,7 +126,7 @@ async function getCookSiteIds(): Promise<string[]> {
   return (data ?? []).map((r) => r.site_id as string);
 }
 
-export async function getSiteLatestMetrics(options: {
+async function fetchSiteLatestMetrics(options: {
   cookCountyOnly?: boolean;
 }): Promise<SiteMetricRow[]> {
   const supabase = createServerClient();
@@ -152,13 +196,27 @@ export async function getSiteLatestMetrics(options: {
   });
 }
 
+export async function getSiteLatestMetrics(options: {
+  cookCountyOnly?: boolean;
+}): Promise<SiteMetricRow[]> {
+  const scope = options.cookCountyOnly ? "cook" : "illinois";
+  return unstable_cache(
+    fetchSiteLatestMetrics,
+    ["site-latest-metrics", scope],
+    {
+      revalidate: REVALIDATE_WEEKLY_SECONDS,
+      tags: [CACHE_TAGS.weeklyMetrics],
+    },
+  )(options);
+}
+
 /**
  * Returns site-level metrics for all available weeks for Illinois.
  * Optionally limited to the most recent `weeks` periods.
  * The result is a flat array keyed by `week_start`; callers should group by
  * `week_start` to build per-week snapshots.
  */
-export async function getSiteHistoricalMetrics(options?: {
+async function fetchSiteHistoricalMetrics(options?: {
   weeks?: number;
   fromDate?: string;
 }): Promise<SiteMetricRow[]> {
@@ -254,6 +312,15 @@ export async function getSiteHistoricalMetrics(options?: {
       active_status: (site?.active_status as string | null) ?? null,
     };
   });
+}
+
+export async function getSiteHistoricalMetrics(options?: {
+  weeks?: number;
+  fromDate?: string;
+}): Promise<SiteMetricRow[]> {
+  // Full Illinois history is ~7 MB and exceeds Next.js unstable_cache's 2 MB limit.
+  // Fetch directly; page-level revalidate still applies on /illinois.
+  return fetchSiteHistoricalMetrics(options);
 }
 
 export async function getSitesForRegion(options: {

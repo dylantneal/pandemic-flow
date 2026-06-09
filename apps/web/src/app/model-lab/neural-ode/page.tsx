@@ -6,20 +6,29 @@ import { NeuralOdeExtendedMetrics } from "@/components/model-lab/neural-ode-exte
 import { NeuralOdeFraming } from "@/components/model-lab/neural-ode-framing";
 import { NeuralOdeResearchBanner } from "@/components/model-lab/neural-ode-research-banner";
 import { NeuralOdeRunCards } from "@/components/model-lab/neural-ode-run-cards";
+import { ResearchDisclosure } from "@/components/model-lab/research-disclosure";
 import { modelLabNeuralOde } from "@/lib/copy/neural-ode-copy";
+import { isCanonicalConservativeCandidate } from "@/lib/model-lab/neural-ode-promotion";
+import { buildPageMetadata } from "@/lib/seo/metadata";
 import {
   getBaselinePerformance,
   getNeuralOdePerformance,
   getNeuralOdeRuns,
 } from "@/lib/supabase/forecasts";
 
-export const dynamic = "force-dynamic";
+/** Canonical research run and any promoted production runs stay visible by default. */
+const isPrimaryRun = (version: string, status: string) =>
+  isCanonicalConservativeCandidate(version) || status === "production";
 
-export const metadata = {
+/** See REVALIDATE_FORECASTS_SECONDS in lib/supabase/cache-config.ts */
+export const revalidate = 21600;
+
+export const metadata = buildPageMetadata({
   title: "Learned dynamics · Model Lab",
   description:
-    "Neural ODE research layer — why v1.7.5 stays off production dashboards and what we learned from constrained wastewater forecasting.",
-};
+    "Neural ODE research layer: why v1.7.5 stays off production dashboards and what we learned from constrained wastewater forecasting.",
+  path: "/model-lab/neural-ode",
+});
 
 export default async function NeuralOdeModelLabPage() {
   const [neuralRuns, performance, baselines] = await Promise.all([
@@ -27,6 +36,18 @@ export default async function NeuralOdeModelLabPage() {
     getNeuralOdePerformance(),
     getBaselinePerformance(),
   ]);
+
+  const primaryRuns = neuralRuns.filter((run) =>
+    isPrimaryRun(run.version, run.status),
+  );
+  const primaryPerformance = performance.filter((run) =>
+    isPrimaryRun(run.version, run.status),
+  );
+  const hasMoreRuns =
+    primaryRuns.length > 0 && primaryRuns.length < neuralRuns.length;
+  const hasMorePerformance =
+    primaryPerformance.length > 0 &&
+    primaryPerformance.length < performance.length;
 
   return (
     <AppShell>
@@ -65,14 +86,42 @@ export default async function NeuralOdeModelLabPage() {
             the frozen canonical research reference (candidate only). Production
             dashboard forecasts remain ensemble-first.
           </p>
-          <NeuralOdeRunCards runs={neuralRuns} />
+          {hasMoreRuns ? (
+            <ResearchDisclosure
+              showLabel="Show all candidate runs"
+              hideLabel="Show only the canonical run"
+              summary={<NeuralOdeRunCards runs={primaryRuns} />}
+              details={<NeuralOdeRunCards runs={neuralRuns} />}
+            />
+          ) : (
+            <NeuralOdeRunCards runs={neuralRuns} />
+          )}
         </section>
 
         <section className="space-y-4" aria-labelledby="compare-heading">
           <h2 id="compare-heading" className="text-lg font-semibold tracking-tight">
             Holdout vs baselines
           </h2>
-          <NeuralOdeComparison neuralRuns={performance} baselines={baselines} />
+          {hasMorePerformance ? (
+            <ResearchDisclosure
+              showLabel="Show all candidate runs"
+              hideLabel="Show only the canonical run"
+              summary={
+                <NeuralOdeComparison
+                  neuralRuns={primaryPerformance}
+                  baselines={baselines}
+                />
+              }
+              details={
+                <NeuralOdeComparison
+                  neuralRuns={performance}
+                  baselines={baselines}
+                />
+              }
+            />
+          ) : (
+            <NeuralOdeComparison neuralRuns={performance} baselines={baselines} />
+          )}
         </section>
 
         <section className="space-y-4" aria-labelledby="extended-metrics-heading">
@@ -82,37 +131,16 @@ export default async function NeuralOdeModelLabPage() {
           >
             Calibration & regime breakdown
           </h2>
-          <NeuralOdeExtendedMetrics runs={performance} />
-        </section>
-
-        <section className="rounded-xl border border-border/80 bg-muted/25 p-6 text-sm leading-relaxed text-muted-foreground">
-          <h2 className="mb-2 text-base font-semibold text-foreground">
-            Research operator notes
-          </h2>
-          <ul className="list-disc space-y-2 pl-5">
-            <li>
-              Frozen reference:{" "}
-              <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                1.7.5-shrinkage-conservative
-              </code>{" "}
-              — do not promote; promotion is blocked in code for this version.
-            </li>
-            <li>
-              Optional h4 experiment:{" "}
-              <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                npm run train:neural-ode:h4-abstain
-              </code>{" "}
-              then{" "}
-              <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                npm run compare:neural-ode:h4-abstain
-              </code>
-              .
-            </li>
-            <li>
-              Production dashboards: ensemble only unless a future run passes all
-              gates and is explicitly promoted.
-            </li>
-          </ul>
+          {hasMorePerformance ? (
+            <ResearchDisclosure
+              showLabel="Show all candidate runs"
+              hideLabel="Show only the canonical run"
+              summary={<NeuralOdeExtendedMetrics runs={primaryPerformance} />}
+              details={<NeuralOdeExtendedMetrics runs={performance} />}
+            />
+          ) : (
+            <NeuralOdeExtendedMetrics runs={performance} />
+          )}
         </section>
       </div>
     </AppShell>
